@@ -1,0 +1,30 @@
+export DAT3M_HOME=/home/lightone/Desktop/code/Dat3M/
+export DAT3M_OUTPUT=$DAT3M_HOME/output
+export CFLAGS="-I$DAT3M_HOME/include"
+
+
+
+mvn clean install -DskipTestsv
+or
+mvn -Dmaven.test.skip=true install
+
+
+
+
+    1. Add pointer type class .done
+    2. Add expression classes: PtrAddExpr IntToPtrExpr PtrToIntExpr (PrtDiffExpr)
+    3. Update parser to generate the expressions. Only the encoder should complain at this step.
+    4. Update expression encoder
+    5. Update property encoder
+
+
+
+
+
+NOTES:
+    PtrBinaryOp is problematic as pointer diff can be undefined
+    Pointed comparaison should be added anyway
+
+
+
+Questions: what is arch type

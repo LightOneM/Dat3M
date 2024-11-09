@@ -1,25 +1,61 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.booleans.*;
-import com.dat3m.dartagnan.expression.floats.*;
-import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.expression.misc.ExtractExpr;
-import com.dat3m.dartagnan.expression.misc.GEPExpr;
-import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.memory.ScopedPointer;
-import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
-import com.google.common.base.Preconditions;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class ExpressionFactory {
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryOp;
+import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
+import com.dat3m.dartagnan.expression.floats.FloatBinaryOp;
+import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
+import com.dat3m.dartagnan.expression.floats.FloatCmpOp;
+import com.dat3m.dartagnan.expression.floats.FloatLiteral;
+import com.dat3m.dartagnan.expression.floats.FloatSizeCast;
+import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
+import com.dat3m.dartagnan.expression.floats.FloatUnaryOp;
+import com.dat3m.dartagnan.expression.floats.IntToFloatCast;
+import com.dat3m.dartagnan.expression.integers.FloatToIntCast;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpOp;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntSizeCast;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
+import com.dat3m.dartagnan.expression.integers.PtrToIntCast;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
+import com.dat3m.dartagnan.expression.misc.ExtractExpr;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
+import com.dat3m.dartagnan.expression.pointers.PtrBinaryExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrBinaryOp;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpOp;
+import com.dat3m.dartagnan.expression.pointers.PtrLiteral;
+import com.dat3m.dartagnan.expression.pointers.PtrUnaryExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrUnaryOp;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.FloatType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.TypeOffset;
+import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.program.memory.ScopedPointer;
+import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
+import com.google.common.base.Preconditions;
 
+public final class ExpressionFactory {
+    
     private static final ExpressionFactory instance = new ExpressionFactory();
 
     private final TypeFactory types = TypeFactory.getInstance();
@@ -190,6 +226,8 @@ public final class ExpressionFactory {
             return sourceType.equals(targetType) ? operand : new IntSizeCast(targetType, operand, signed);
         } else if (sourceType instanceof FloatType) {
             return new FloatToIntCast(targetType, operand, signed);
+        } else if (sourceType instanceof PointerType) {
+            return new PtrToIntCast(targetType, operand, signed);
         }
 
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
@@ -288,6 +326,71 @@ public final class ExpressionFactory {
     public ScopedPointerVariable makeScopedPointerVariable(String id, String scopeId, Type type, MemoryObject address) {
         return new ScopedPointerVariable(id, scopeId, type, address);
     }
+
+
+
+    //------------------------------------------------------------------------------------------------------------------
+    // real Pointers
+    public PtrLiteral makeZero(PointerType type) {
+        return makePtrValue(BigInteger.ZERO, type);
+    }
+
+    public PtrLiteral parseValue(String text, PointerType type) {
+        return makePtrValue(new BigInteger(text), type);
+    }
+
+    public PtrLiteral makePtrValue(BigInteger value, PointerType type) {
+        return new PtrLiteral(type, value);
+    }
+
+    public Expression makePtrLT(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makePtrCmp(leftOperand, signed ? PtrCmpOp.LT : PtrCmpOp.ULT, rightOperand);
+    }
+
+    public Expression makePtrGT(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makePtrCmp(leftOperand, signed ? PtrCmpOp.GT : PtrCmpOp.UGT, rightOperand);
+    }
+
+    public Expression makePtrLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makePtrCmp(leftOperand, signed ? PtrCmpOp.LTE : PtrCmpOp.ULTE, rightOperand);
+    }
+
+    public Expression makePtrGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+        return makePtrCmp(leftOperand, signed ? PtrCmpOp.GTE : PtrCmpOp.UGTE, rightOperand);
+    }
+
+
+    public Expression makePtrAdd(Expression leftOperand, Expression rightOperand) {
+        return makePtrBinary(leftOperand, PtrBinaryOp.ADD, rightOperand);
+    }
+
+    public Expression makePtrSub(Expression leftOperand, Expression rightOperand) {
+        return makePtrBinary(leftOperand, PtrBinaryOp.SUB, rightOperand);
+    }
+
+
+    public Expression makePtrUnary(PtrUnaryOp operator, Expression operand) {
+        return new PtrUnaryExpr(operator, operand);
+    }
+
+    public Expression makePtrCmp(Expression leftOperand, PtrCmpOp operator, Expression rightOperand) {
+        return new PtrCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
+    }
+
+    public Expression makePtrBinary(Expression leftOperand, PtrBinaryOp operator, Expression rightOperand) {
+        return new PtrBinaryExpr(leftOperand, operator, rightOperand);
+    }
+
+    public Expression makePtrCast(Expression operand, PointerType targetType, boolean signed) {
+        final Type sourceType = operand.getType();
+
+        if (sourceType instanceof IntegerType) {
+            return sourceType.equals(targetType) ? operand : new IntToPtrCast(targetType, operand, signed);
+        }
+
+        throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
+    }
+
 
     // -----------------------------------------------------------------------------------------------------------------
     // Misc

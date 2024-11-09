@@ -1,15 +1,17 @@
 package com.dat3m.dartagnan.expression.type;
 
-import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.utils.Normalizer;
-import com.google.common.math.IntMath;
-
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.utils.Normalizer;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import com.google.common.math.IntMath;
 
 public final class TypeFactory {
 
@@ -18,7 +20,7 @@ public final class TypeFactory {
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
     private final IntegerType pointerDifferenceType;
-
+    // private final PointerType pointerType;
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
@@ -29,15 +31,18 @@ public final class TypeFactory {
     public static TypeFactory getInstance() {
         return instance;
     }
-
+    public Type getPointerDiffType(){
+        return pointerDifferenceType;   // TODO make this part of the program
+    }
     public BooleanType getBooleanType() {
         return booleanType;
     }
 
     public VoidType getVoidType() { return voidType; }
 
-    public Type getPointerType() {
-        return pointerDifferenceType;
+    public PointerType getPointerType(int bitWidth) {
+        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
+        return typeNormalizer.normalize(new PointerType(bitWidth));
     }
 
     public IntegerType getIntegerType(int bitWidth) {
@@ -115,8 +120,8 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new ArrayType(element, size));
     }
 
-    public IntegerType getArchType() {
-        return pointerDifferenceType;
+    public PointerType getArchType() {
+        return getPointerType(64); // TODO ask about this
     }
 
     public IntegerType getByteType() {
@@ -133,6 +138,9 @@ public final class TypeFactory {
         }
         if (type instanceof IntegerType integerType) {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
+        }
+        if (type instanceof PointerType pointerType) {
+            return IntMath.divide(pointerType.getBitWidth(), 8, RoundingMode.CEILING);
         }
         if (type instanceof FloatType floatType) {
             return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
