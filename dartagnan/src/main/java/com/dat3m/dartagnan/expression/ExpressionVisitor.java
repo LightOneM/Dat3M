@@ -46,9 +46,7 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitIntSizeCastExpression(IntSizeCast expr) { return visitCastExpression(expr); }
     default TRet visitFloatToIntCastExpression(FloatToIntCast expr) { return visitCastExpression(expr); }
     default TRet visitIntLiteral(IntLiteral lit) { return visitLeafExpression(lit); }
-    // start added //
     default TRet visitPtrToIntCastExpression(PtrToIntCast expr) { return visitCastExpression(expr); }
-    // end added //
 
     // =================================== Booleans ===================================
     default TRet visitBoolBinaryExpression(BoolBinaryExpr expr) { return visitBinaryExpression(expr); }
@@ -70,7 +68,7 @@ public interface ExpressionVisitor<TRet> {
     // =================================== Pointer ===================================
     default TRet visitGEPExpression(GEPExpr expr) { return visitExpression(expr); }
     default TRet visitPtrCmpExpression(PtrCmpExpr expr) { return visitBinaryExpression(expr); }
-    default TRet visitPtrBinaryExpression(PtrAddOffsetExpr expr) { return visitExpression(expr); }
+    default TRet visitPtrAddOffsetExpression(PtrAddOffsetExpr expr) { return visitExpression(expr); }
     default TRet visitIntToPtrCastExpression(IntToPtrCast expr) { return visitCastExpression(expr); }
     default TRet visitNullPointerLiteral(NullLiteral nullptr){return visitLeafExpression(nullptr);}
 

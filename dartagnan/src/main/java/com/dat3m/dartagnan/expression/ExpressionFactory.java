@@ -307,7 +307,6 @@ public final class ExpressionFactory {
     // Pointers
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
-        //TODO getPointerType()
         Preconditions.checkArgument(base.getType().equals(types.getPointerType()),
                 "Applying offsets to non-pointer expression.");
         return new GEPExpr(indexingType, base, offsets);
@@ -321,16 +320,9 @@ public final class ExpressionFactory {
         return new ScopedPointerVariable(id, scopeId, type, address);
     }
 
-
-
-    //------------------------------------------------------------------------------------------------------------------
-    // real Pointers
-
-
     public Expression makePtrAddOffset(Expression leftOperand, Expression rightOperand) {
         return new PtrAddOffsetExpr(leftOperand, rightOperand); // FIXME consider commutativity here as maybe ? ptr + int = int + ptr ?
     }
-
 
     public Expression makePtrCmp(Expression leftOperand, PtrCmpOp operator, Expression rightOperand) {
         return new PtrCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
@@ -340,17 +332,15 @@ public final class ExpressionFactory {
         return nullLiteral;
     }
 
-
+    // TODO overload the function
     public Expression makePtrCast(Expression operand, PointerType targetType) {
         final Type sourceType = operand.getType();
 
         if (sourceType instanceof IntegerType) {
             return sourceType.equals(targetType) ? operand : new IntToPtrCast(targetType, operand);
         }
-
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
     }
-    // TODO overload the function
 
     // -----------------------------------------------------------------------------------------------------------------
     // Misc
@@ -458,4 +448,3 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
     }
 }
-// TODO add pointer null here

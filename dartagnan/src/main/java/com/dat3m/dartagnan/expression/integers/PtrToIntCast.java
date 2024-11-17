@@ -12,7 +12,6 @@ public final class PtrToIntCast extends CastExpressionBase<IntegerType, PointerT
     public PtrToIntCast(IntegerType targetType, Expression operand) {
         super(targetType, operand);
         ExpressionHelper.checkExpectedType(operand, PointerType.class);
-        
     }
 
     @Override

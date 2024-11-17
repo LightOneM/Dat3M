@@ -24,10 +24,10 @@ public final class TypeFactory {
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
-        archType = getIntegerType(64);//TODO insert proper pointer and difference types
+        archType = getIntegerType(64);
     }
 
-    //TODO make this part of the program.
+
     public static TypeFactory getInstance() {
         return instance;
     }

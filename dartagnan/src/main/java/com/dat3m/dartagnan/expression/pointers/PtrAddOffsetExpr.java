@@ -16,13 +16,13 @@ public final class PtrAddOffsetExpr extends PointerOffsetExpressionBase<PointerT
         super((PointerType) base.getType(), ExpressionKind.Other.PTR_OFFSET, base, offset);
         ExpressionHelper.checkExpectedType(offset, IntegerType.class);
         //Preconditions.checkArgument(offset.) 
-        // TODO force integrt to be of arch size
+        // TODO force integer to be of arch size
         ExpressionHelper.checkExpectedType(base, PointerType.class);
     }
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
-        return visitor.visitPtrBinaryExpression(this);
+        return visitor.visitPtrAddOffsetExpression(this);
     }
 
 

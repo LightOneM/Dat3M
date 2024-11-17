@@ -808,12 +808,14 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitAddrSpaceCastInst(AddrSpaceCastInstContext ctx) {
         return conversionInstruction(ctx.typeValue(), ctx.type(), true);
     }
-
+// TODO ask about this
     private Register conversionInstruction(TypeValueContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer in %s.", target);
-        final Expression result = expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+        checkSupport(targetType instanceof IntegerType || targetType instanceof PointerType , "Non-Integer or Non-Pointer in %s.", target);
+        final Expression result = targetType instanceof IntegerType
+                ? expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed)
+                : expressions.makePtrCast(operandExpression, (PointerType) targetType);
         return assignToRegister(result);
     }
 
@@ -1001,7 +1003,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitIntToPtrExpr(IntToPtrExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), true);
+        return ptrCastExpression(ctx.typeConst(), ctx.type());
     }
 
     @Override
@@ -1052,7 +1054,12 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         expectedType = null;
         return o;
     }
-
+    private Expression ptrCastExpression(TypeConstContext operand, TypeContext target) {
+        final Expression operandExpression = visitTypeConst(operand);
+        final Type targetType = parseType(target);
+        checkSupport(targetType instanceof PointerType, "Non-type type %s.", target);
+        return expressions.makePtrCast(operandExpression, (PointerType) targetType);
+    }
     private Expression castExpression(TypeConstContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeConst(operand);
         final Type targetType = parseType(target);
