@@ -832,7 +832,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeZero((PointerType) pointerType); // TODO this was changes from IntegerType to PointerType
+        return expressions.makeNullLiteral((PointerType) pointerType);
     }
 
     @Override

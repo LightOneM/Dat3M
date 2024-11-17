@@ -143,7 +143,8 @@ public class EventFactory {
         //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
-                expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
+                expressions.makeAdd(base, expressions.makeValue(offset, types.getArchType())); //TODO make sure that this works it was (integertype) base.get(type)
+
         return new Init(base, offset, address);
     }
 

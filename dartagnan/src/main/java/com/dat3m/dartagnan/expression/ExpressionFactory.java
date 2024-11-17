@@ -31,13 +31,8 @@ import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.integers.PtrToIntCast;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.misc.ExtractExpr;
-import com.dat3m.dartagnan.expression.pointers.GEPExpr;
+import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
-import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
-import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetOp;
-import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
-import com.dat3m.dartagnan.expression.pointers.PtrCmpOp;
-import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetExpr;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.BooleanType;
@@ -59,7 +54,8 @@ public final class ExpressionFactory {
     private final BooleanType booleanType = types.getBooleanType();
     private final BoolLiteral falseConstant = new BoolLiteral(booleanType, false);
     private final BoolLiteral trueConstant = new BoolLiteral(booleanType, true);
-    // TODO add null 
+    private final PointerType pointerType = types.getPointerType();
+    private final NullLiteral<PointerType> nullLiteral = new NullLiteral<>(pointerType);
 
     private ExpressionFactory() {}
 
@@ -332,12 +328,16 @@ public final class ExpressionFactory {
 
 
     public Expression makePtrAddOffset(Expression leftOperand, Expression rightOperand) {
-        return PtrAddOffsetExpr(leftOperand, rightOperand); // FIXME consider commutativity here as maybe ? ptr + int = int + ptr ?
+        return new PtrAddOffsetExpr(leftOperand, rightOperand); // FIXME consider commutativity here as maybe ? ptr + int = int + ptr ?
     }
 
 
     public Expression makePtrCmp(Expression leftOperand, PtrCmpOp operator, Expression rightOperand) {
         return new PtrCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
+    }
+
+    public Expression makeNullLiteral(PointerType type) {
+        return nullLiteral;
     }
 
 

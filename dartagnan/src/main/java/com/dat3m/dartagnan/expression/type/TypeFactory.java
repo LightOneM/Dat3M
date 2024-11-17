@@ -20,7 +20,7 @@ public final class TypeFactory {
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
     private final IntegerType archType ;
-    private final PointerType pointerType = new PointerType(64);
+    private final PointerType pointerType = new PointerType();
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
@@ -137,7 +137,7 @@ public final class TypeFactory {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
         }
         if (type instanceof PointerType pointerType) {
-            return IntMath.divide(pointerType.getBitWidth(), 8, RoundingMode.CEILING);
+            return IntMath.divide(8, 8, RoundingMode.CEILING);// TODO the first argument is bitwidth make sure it is right
         }
         if (type instanceof FloatType floatType) {
             return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
