@@ -9,7 +9,7 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 
 public final class IntToPtrCast extends CastExpressionBase<PointerType, IntegerType> {
 
-    public IntToPtrCast(PointerType targetType, Expression operand, boolean isSigned) {
+    public IntToPtrCast(PointerType targetType, Expression operand) {
         super(targetType, operand);
         ExpressionHelper.checkExpectedType(operand, IntegerType.class);
     }

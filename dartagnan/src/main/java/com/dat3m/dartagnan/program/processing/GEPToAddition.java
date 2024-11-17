@@ -45,7 +45,7 @@ public class GEPToAddition implements ProgramProcessor {
         private final ExpressionFactory expressions = ExpressionFactory.getInstance();
         private final IntegerType archType = types.getArchType();
 
-        @Override
+        @Override //TODO fix the calculations order and gen pointer type
         public Expression visitGEPExpression(GEPExpr getElementPointer) {
             Type type = getElementPointer.getIndexingType();
             Expression result = getElementPointer.getBase().accept(this);

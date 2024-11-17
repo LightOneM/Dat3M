@@ -9,16 +9,11 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 
 public final class PtrToIntCast extends CastExpressionBase<IntegerType, PointerType> {
 
-    private final boolean isSigned;
-
-    public PtrToIntCast(IntegerType targetType, Expression operand, boolean isSigned) {
+    public PtrToIntCast(IntegerType targetType, Expression operand) {
         super(targetType, operand);
         ExpressionHelper.checkExpectedType(operand, PointerType.class);
-        this.isSigned = false; // false because all pointers should be memory adresses
-        // TODO discuss pointer casts and signs
+        
     }
-
-    public boolean isSigned() { return isSigned; }
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {

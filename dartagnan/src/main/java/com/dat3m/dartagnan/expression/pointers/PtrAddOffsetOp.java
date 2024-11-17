@@ -2,8 +2,8 @@ package com.dat3m.dartagnan.expression.pointers;
 
 import com.dat3m.dartagnan.expression.ExpressionKind;
 
-public enum PtrBinaryOp implements ExpressionKind {
-    ADD, SUB;
+public enum PtrAddOffsetOp implements ExpressionKind {// change expression kind
+    ADD;
 
     @Override
     public String toString() {
@@ -12,17 +12,12 @@ public enum PtrBinaryOp implements ExpressionKind {
 
     @Override
     public String getSymbol() {
-        return switch (this) {
-            case ADD -> "+";
-            case SUB -> "-";
-            default -> super.toString();
-        };
+        return "+";
     }
-
-    public static PtrBinaryOp PtrToOp(int i) {
+// change ptr binary expr to pointer offset and define a kind
+    public static PtrAddOffsetOp PtrToOp(int i) { // this one can be used later on
         return switch (i) {
             case 0 -> ADD;
-            case 1 -> SUB;
             default -> throw new UnsupportedOperationException("The pointers binary operator is not recognized");
         };
     }
@@ -33,5 +28,4 @@ public enum PtrBinaryOp implements ExpressionKind {
             default -> false;
         };
     }
-    // be carefull here substraction can be undefined //
 }

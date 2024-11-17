@@ -19,34 +19,31 @@ public final class TypeFactory {
 
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
-    private final IntegerType pointerDifferenceType;
-    // private final PointerType pointerType;
+    private final IntegerType archType ;
+    private final PointerType pointerType = new PointerType(64);
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
-        pointerDifferenceType = getIntegerType(64);//TODO insert proper pointer and difference types
+        archType = getIntegerType(64);//TODO insert proper pointer and difference types
     }
 
     //TODO make this part of the program.
     public static TypeFactory getInstance() {
         return instance;
     }
-    public Type getPointerDiffType(){
-        return pointerDifferenceType;   // TODO make this part of the program
-    }
+
     public BooleanType getBooleanType() {
         return booleanType;
     }
 
     public VoidType getVoidType() { return voidType; }
 
-    public PointerType getPointerType(int bitWidth) {
-        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
-        return typeNormalizer.normalize(new PointerType(bitWidth));
+    public PointerType getPointerType() {
+        return pointerType;
     }
 
     public IntegerType getIntegerType(int bitWidth) {
-        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
+        checkArgument(bitWidth > 0, "Non-positive integer bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
     }
 
@@ -120,8 +117,8 @@ public final class TypeFactory {
         return typeNormalizer.normalize(new ArrayType(element, size));
     }
 
-    public PointerType getArchType() {
-        return getPointerType(64); // TODO ask about this
+    public IntegerType getArchType() {
+        return getIntegerType(64); // TODO ask about this
     }
 
     public IntegerType getByteType() {

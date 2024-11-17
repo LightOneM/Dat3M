@@ -1,10 +1,29 @@
 package com.dat3m.dartagnan.expression;
 
-import com.dat3m.dartagnan.expression.booleans.*;
-import com.dat3m.dartagnan.expression.floats.*;
-import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.pointers.*;
-import com.dat3m.dartagnan.expression.misc.*;
+import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
+import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
+import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
+import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
+import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
+import com.dat3m.dartagnan.expression.floats.FloatLiteral;
+import com.dat3m.dartagnan.expression.floats.FloatSizeCast;
+import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
+import com.dat3m.dartagnan.expression.floats.IntToFloatCast;
+import com.dat3m.dartagnan.expression.integers.FloatToIntCast;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
+import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.integers.IntSizeCast;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.PtrToIntCast;
+import com.dat3m.dartagnan.expression.misc.ConstructExpr;
+import com.dat3m.dartagnan.expression.misc.ExtractExpr;
+import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.GEPExpr;
+import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
+import com.dat3m.dartagnan.expression.pointers.NullLiteral;
+import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
@@ -50,13 +69,11 @@ public interface ExpressionVisitor<TRet> {
 
     // =================================== Pointer ===================================
     default TRet visitGEPExpression(GEPExpr expr) { return visitExpression(expr); }
-    // start added //
     default TRet visitPtrCmpExpression(PtrCmpExpr expr) { return visitBinaryExpression(expr); }
-    default TRet visitPtrBinaryExpression(PtrBinaryExpr expr) { return visitBinaryExpression(expr); }
-    default TRet visitPtrUnaryExpression(PtrUnaryExpr expr) { return visitUnaryExpression(expr); }
+    default TRet visitPtrBinaryExpression(PtrAddOffsetExpr expr) { return visitExpression(expr); }
     default TRet visitIntToPtrCastExpression(IntToPtrCast expr) { return visitCastExpression(expr); }
-    default TRet visitPtrLiteral(PtrLiteral litr){return visitLeafExpression(litr);}
-    // end added //
+    default TRet visitNullPointerLiteral(NullLiteral nullptr){return visitLeafExpression(nullptr);}
+
     // =================================== Generic ===================================
     default TRet visitITEExpression(ITEExpr expr) { return visitExpression(expr); }
 
@@ -73,5 +90,4 @@ public interface ExpressionVisitor<TRet> {
                 expr.getClass().getSimpleName(), clazz.getSimpleName());
         return new UnsupportedOperationException(error);
     }
-
 }
