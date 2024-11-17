@@ -136,8 +136,8 @@ public final class TypeFactory {
         if (type instanceof IntegerType integerType) {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
         }
-        if (type instanceof PointerType pointerType) {
-            return IntMath.divide(8, 8, RoundingMode.CEILING);// TODO the first argument is bitwidth make sure it is right
+        if (type instanceof PointerType) {
+            return IntMath.divide(64, 8, RoundingMode.CEILING);// TODO: the first argument is bitwidth make sure it is right
         }
         if (type instanceof FloatType floatType) {
             return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);

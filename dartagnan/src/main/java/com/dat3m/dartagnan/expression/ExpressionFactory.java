@@ -308,7 +308,7 @@ public final class ExpressionFactory {
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
         //TODO getPointerType()
-        Preconditions.checkArgument(base.getType().equals(types.getArchType()),
+        Preconditions.checkArgument(base.getType().equals(types.getPointerType()),
                 "Applying offsets to non-pointer expression.");
         return new GEPExpr(indexingType, base, offsets);
     }
