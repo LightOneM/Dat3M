@@ -9,14 +9,13 @@ import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
 import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
 import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
-import com.dat3m.dartagnan.expression.integers.IntSizeCast;
-import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.pointers.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
+import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
+import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.util.ArrayList;
@@ -44,6 +43,14 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     @Override
     public Expression visitIntCmpExpression(IntCmpExpr cmp) {
         return expressions.makeIntCmp(cmp.getLeft().accept(this), cmp.getKind(), cmp.getRight().accept(this));
+    }
+    @Override
+    public Expression visitPtrToIntCastExpression(PtrToIntCast expr) {
+        return expressions.makeIntegerCast(expr.getOperand().accept(this), expr.getTargetType(), false);
+    }
+    @Override
+    public Expression visitIntToPtrCastExpression(IntToPtrCast expr) {
+        return expressions.makePtrCast(expr.getOperand().accept(this), expr.getTargetType());
     }
 
     @Override
@@ -108,4 +115,9 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     public Expression visitLeafExpression(LeafExpression expr) {
         return expr;
     }
+    @Override
+    public Expression visitPtrAddOffsetExpression(PtrAddOffsetExpr expr){
+        return expr;
+    }
 }
+// TODO add all missing

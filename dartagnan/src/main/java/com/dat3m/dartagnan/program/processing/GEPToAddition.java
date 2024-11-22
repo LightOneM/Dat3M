@@ -50,33 +50,35 @@ public class GEPToAddition implements ProgramProcessor {
             Type type = getElementPointer.getIndexingType();
             Expression result = getElementPointer.getBase().accept(this);
             final List<Expression> offsets = getElementPointer.getOffsets();
+
             assert !offsets.isEmpty();
-            result = expressions.makeAdd(result,
+            Expression offset =
                     expressions.makeMul(
                             expressions.makeValue(types.getMemorySizeInBytes(type), archType),
-                            expressions.makeIntegerCast(offsets.get(0).accept(this), archType, true)));
+                            expressions.makeIntegerCast(offsets.get(0).accept(this), archType, true));
+
             for (final Expression oldOffset : offsets.subList(1, offsets.size())) {
-                final Expression offset = oldOffset.accept(this);
+                final Expression _offset = oldOffset.accept(this);
                 if (type instanceof ArrayType arrayType) {
                     type = arrayType.getElementType();
-                    result = expressions.makeAdd(result,
+                    offset = expressions.makeAdd(offset,
                             expressions.makeMul(
                                     expressions.makeValue(types.getMemorySizeInBytes(arrayType.getElementType()), archType),
-                                    expressions.makeIntegerCast(offset, archType, true)));
+                                    expressions.makeIntegerCast(_offset, archType, true)));
                     continue;
                 }
                 if (!(type instanceof AggregateType aggregateType)) {
                     throw new MalformedProgramException(String.format("GEP from non-compound type %s.", type));
                 }
-                if (!(offset instanceof IntLiteral constant)) {
+                if (!(_offset instanceof IntLiteral constant)) {
                     throw new MalformedProgramException(
                             String.format("Non-constant field index %s for aggregate of type %s.", offset, type));
                 }
                 final TypeOffset typeOffset = TypeOffset.of(aggregateType, constant.getValueAsInt());
                 type = typeOffset.type();
-                result = expressions.makeAdd(result, expressions.makeValue(typeOffset.offset(), archType));
+                offset = expressions.makeAdd(offset, expressions.makeValue(typeOffset.offset(), archType));
             }
-            return result;
+            return expressions.makePtrAddOffset(result, offset);
         }
     }
 }

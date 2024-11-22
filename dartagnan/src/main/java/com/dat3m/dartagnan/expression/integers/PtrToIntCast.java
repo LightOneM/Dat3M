@@ -13,7 +13,8 @@ public final class PtrToIntCast extends CastExpressionBase<IntegerType, PointerT
         super(targetType, operand);
         ExpressionHelper.checkExpectedType(operand, PointerType.class);
     }
-
+    @Override
+    public String toString(){ return "PtrToInt(" + operand.toString() + ")"; }
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitPtrToIntCastExpression(this);

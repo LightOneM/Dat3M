@@ -137,7 +137,7 @@ public final class TypeFactory {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
         }
         if (type instanceof PointerType) {
-            return IntMath.divide(64, 8, RoundingMode.CEILING);// TODO: the first argument is bitwidth make sure it is right
+            return getMemorySizeInBytes(archType);
         }
         if (type instanceof FloatType floatType) {
             return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);

@@ -87,6 +87,8 @@ public class ProcessingManager implements ProgramProcessor {
                 printBeforeProcessing ? DebugPrint.withHeader("Before processing", Printer.Mode.ALL) : null,
                 intrinsics.markIntrinsicsPass(),
                 GEPToAddition.newInstance(),
+                //DebugPrint.withHeader("debug", Printer.Mode.ALL),
+                //TODO use and remove
                 NaiveDevirtualisation.newInstance(),
                 Inlining.fromConfig(config),
                 ProgramProcessor.fromFunctionProcessor(

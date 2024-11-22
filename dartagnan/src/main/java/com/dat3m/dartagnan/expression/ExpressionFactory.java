@@ -55,7 +55,7 @@ public final class ExpressionFactory {
     private final BoolLiteral falseConstant = new BoolLiteral(booleanType, false);
     private final BoolLiteral trueConstant = new BoolLiteral(booleanType, true);
     private final PointerType pointerType = types.getPointerType();
-    private final NullLiteral<PointerType> nullLiteral = new NullLiteral<>(pointerType);
+    private final NullLiteral nullLiteral = new NullLiteral(pointerType);
 
     private ExpressionFactory() {}
 
@@ -338,6 +338,8 @@ public final class ExpressionFactory {
 
         if (sourceType instanceof IntegerType) {
             return sourceType.equals(targetType) ? operand : new IntToPtrCast(targetType, operand);
+        }if (sourceType == targetType) {
+            return operand;
         }
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, targetType));
     }
@@ -377,6 +379,8 @@ public final class ExpressionFactory {
             return makeIntegerCast(expression, integerType, signed);
         } else if (type instanceof FloatType floatType) {
             return makeFloatCast(expression, floatType, signed);
+        } else if(type instanceof PointerType pointerType) {
+            return makePtrCast(expression, pointerType);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
     }

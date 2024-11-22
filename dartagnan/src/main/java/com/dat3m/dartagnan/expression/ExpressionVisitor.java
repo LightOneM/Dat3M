@@ -24,6 +24,7 @@ import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
 import com.dat3m.dartagnan.expression.pointers.NullLiteral;
 import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetExpr;
 import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;

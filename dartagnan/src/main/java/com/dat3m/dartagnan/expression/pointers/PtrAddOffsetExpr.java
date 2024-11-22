@@ -11,7 +11,7 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 
 
 public final class PtrAddOffsetExpr extends PointerOffsetExpressionBase<PointerType, ExpressionKind.Other> {
-
+// TODO remove the extention and ieherit from expressio
     public PtrAddOffsetExpr(Expression base, Expression offset) {
         super((PointerType) base.getType(), ExpressionKind.Other.PTR_OFFSET, base, offset);
         ExpressionHelper.checkExpectedType(offset, IntegerType.class);
@@ -33,4 +33,6 @@ public final class PtrAddOffsetExpr extends PointerOffsetExpressionBase<PointerT
                 && base.equals(expr.base)
                 && offset.equals(expr.offset));
     }
+    @Override
+    public String toString() {return base.toString() + " + " + offset.toString();}//TODO find something better for +
 }
