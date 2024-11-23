@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import java.math.BigInteger;
 import static java.util.Arrays.asList;
 
@@ -15,6 +16,9 @@ import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
@@ -30,7 +34,15 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
@@ -290,6 +302,33 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         Formula tBranch = encode(iteExpr.getTrueCase());
         Formula fBranch = encode(iteExpr.getFalseCase());
         return booleanFormulaManager.ifThenElse(guard, tBranch, fBranch);
+    }
+
+    @Override
+    public Formula visitConstructExpression(ConstructExpr construct) {
+        final List<Formula> elements = new ArrayList<>();
+        for (Expression inner : construct.getOperands()) {
+            elements.add(encode(inner));
+        }
+        return context.getTupleFormulaManager().makeTuple(elements);
+    }
+
+    @Override
+    public Formula visitAggregateCmpExpression(AggregateCmpExpr expr) {
+        final Formula left = encode(expr.getLeft());
+        final Formula right = encode(expr.getRight());
+        final BooleanFormula eq = context.equal(left, right);
+        return switch (expr.getKind())
+        {
+            case EQ -> eq;
+            case NEQ -> context.getBooleanFormulaManager().not(eq);
+        };
+    }
+
+    @Override
+    public Formula visitExtractExpression(ExtractExpr extract) {
+        final TupleFormula inner = (TupleFormula) encode(extract.getOperand());
+        return context.getTupleFormulaManager().extract(inner, extract.getFieldIndex());
     }
 
     @Override

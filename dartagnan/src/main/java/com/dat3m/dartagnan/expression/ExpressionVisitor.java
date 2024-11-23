@@ -1,5 +1,8 @@
 package com.dat3m.dartagnan.expression;
 
+import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
+import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
+import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
@@ -18,6 +21,9 @@ import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.PtrToIntCast;
 import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.misc.ExtractExpr;
+import com.dat3m.dartagnan.expression.floats.*;
+import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.pointers.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointers.GEPExpr;
 import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
@@ -63,6 +69,7 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitFloatLiteral(FloatLiteral lit) { return visitLeafExpression(lit); }
 
     // =================================== Aggregates ===================================
+    default TRet visitAggregateCmpExpression(AggregateCmpExpr expr) { return  visitBinaryExpression(expr); }
     default TRet visitExtractExpression(ExtractExpr extract) { return visitUnaryExpression(extract); }
     default TRet visitConstructExpression(ConstructExpr construct) { return visitExpression(construct); }
 
