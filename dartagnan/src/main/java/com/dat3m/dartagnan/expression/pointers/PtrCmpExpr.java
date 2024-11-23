@@ -18,4 +18,11 @@ public final class PtrCmpExpr extends BinaryExpressionBase<BooleanType, PtrCmpOp
     public <T> T accept(ExpressionVisitor<T> visitor) {
         return visitor.visitPtrCmpExpression(this);
     }
+
+    @Override
+    public String toString() {
+        return left.toString() + " P{"+ kind.toString() + "} " + right.toString();
+    }
+
+
 }
