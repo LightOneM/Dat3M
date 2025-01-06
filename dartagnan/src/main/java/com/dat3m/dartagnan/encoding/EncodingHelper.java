@@ -1,17 +1,27 @@
 package com.dat3m.dartagnan.encoding;
 
+import ap.parser.smtlib.FoldVisitor;
+import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
+import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
 public class EncodingHelper {
 
     private final FormulaManager fmgr;
+    private final TupleFormulaManager tfmgr;
 
-    public EncodingHelper(FormulaManager fmgr) {
+    public EncodingHelper(FormulaManager fmgr, TupleFormulaManager tfmgr) {
         this.fmgr = fmgr;
+        this.tfmgr = tfmgr;
     }
+//    public TupleFormulaManager getTupleFormulaManager() {
+//        return tupleFormulaManager;
+//    }
 
     public BooleanFormula equals(Formula left, Formula right) {
         if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
@@ -23,9 +33,21 @@ public class EncodingHelper {
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
             return fmgr.getBitvectorFormulaManager().equal(bvLeft, bvRight);
         }
-
-        throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);
+        // TODO more important additions here Needs revision
+        if (left instanceof TupleFormula tpLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+            IntegerFormulaManager ifm = fmgr.getIntegerFormulaManager();
+            Formula left_sum = tpLeft.elements.get(0);
+            for(int c = 1; tpLeft.elements.size() > c; c++ ) {
+                left_sum = ifm.add((NumeralFormula.IntegerFormula)left_sum , (NumeralFormula.IntegerFormula)tpLeft.elements.get(c));
+            }
+            return equals(left_sum, iRight);
+        }
+        if(left instanceof TupleFormula tfLeft && right instanceof TupleFormula tfRight) {
+            return tfmgr.equal(tfLeft,tfRight);
+        }
+        throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right );
     }
+    // TODO add pointer to equal?
 
     public BooleanFormula greaterThan(Formula left, Formula right, boolean signed) {
         if (left instanceof NumeralFormula.IntegerFormula iLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
@@ -64,6 +86,33 @@ public class EncodingHelper {
             final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
             return fmgr.getBitvectorFormulaManager().add(bvLeft, bvRight);
+        }
+        if (left instanceof TupleFormula tpLeft && right instanceof TupleFormula tpRight) {
+            // We dont support pointer addition ?? does it happen? throw exceptions?
+            //TODO the second part should not be a base pointer. to be enforced later on
+            IntegerFormulaManager ifm = fmgr.getIntegerFormulaManager();
+            Formula sum = tpLeft.elements.get(0);
+            for(int c = 1; tpLeft.elements.size() > c; c++) {
+                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpLeft.elements.get(c));
+            }
+            for(int c = 1; tpRight.elements.size() > c; c++) {
+                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpRight.elements.get(c));
+            }
+            return sum;
+        }
+        // TODO so much casting
+        if (left instanceof TupleFormula tpLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+            IntegerFormulaManager ifm = fmgr.getIntegerFormulaManager();
+            Formula base = tpLeft.elements.get(0);
+            Formula sum = tpLeft.elements.get(1);
+            for(int c = 1; tpLeft.elements.size() > c; c++) {
+                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpLeft.elements.get(c));
+            }
+            sum = ifm.add((NumeralFormula.IntegerFormula) sum, iRight);
+            List<Formula> tuples = new ArrayList<>();
+            tuples.add(base);
+            tuples.add(sum);
+            return tfmgr.makeTuple(tuples);
         }
 
         throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);

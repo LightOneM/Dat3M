@@ -2,9 +2,7 @@ package com.dat3m.dartagnan.encoding.formulas;
 
 import com.dat3m.dartagnan.encoding.EncodingContext;
 import com.google.common.base.Preconditions;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.ArrayList;
 import java.util.List;

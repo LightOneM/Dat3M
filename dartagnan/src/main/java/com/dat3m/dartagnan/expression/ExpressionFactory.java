@@ -29,28 +29,18 @@ import com.dat3m.dartagnan.expression.integers.IntSizeCast;
 import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.integers.PtrToIntCast;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
-import com.dat3m.dartagnan.expression.misc.ExtractExpr;
 import com.dat3m.dartagnan.expression.pointers.*;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
 import com.dat3m.dartagnan.expression.aggregates.AggregateCmpOp;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
-import com.dat3m.dartagnan.expression.booleans.*;
-import com.dat3m.dartagnan.expression.floats.*;
-import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.misc.GEPExpr;
+import com.dat3m.dartagnan.expression.pointers.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.memory.ScopedPointer;
 import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 
 public final class ExpressionFactory {
 
@@ -377,6 +367,8 @@ public final class ExpressionFactory {
             return makeFalse();
         } else if (type instanceof FloatType floatType) {
             return makeZero(floatType);
+        }else if(type instanceof PointerType pointerType) {
+            return makeNullLiteral(pointerType);
         } else {
             throw new UnsupportedOperationException("Cannot create zero of type " + type);
         }

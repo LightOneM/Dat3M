@@ -294,7 +294,7 @@ public class ProgramEncoder implements Encoder {
 
     private BooleanFormula encodeMemoryLayout(Memory memory) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final EncodingHelper helper = new EncodingHelper(context.getFormulaManager());
+        final EncodingHelper helper = new EncodingHelper(context.getFormulaManager(),context.getTupleFormulaManager());
         final List<BooleanFormula> enc = new ArrayList<>();
 
         // TODO: We could sort the objects to generate better encoding:

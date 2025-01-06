@@ -1,12 +1,10 @@
-package com.dat3m.dartagnan.expression.pointers;
-
+package com.dat3m.dartagnan.expression.type;
+import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
-import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
-import com.dat3m.dartagnan.expression.type.PointerType;
 
-public final class NullLiteral extends LeafExpressionBase<PointerType>{
+public final class NullLiteral extends LeafExpressionBase<PointerType> implements Type{
 
 
     public NullLiteral(PointerType type) {

@@ -20,9 +20,6 @@ public abstract class NaryExpressionBase<TType extends Type, TKind extends Expre
     }
 
     @Override
-    public TType getType() { return this.type; }
-
-    @Override
     public TKind getKind() {
         return kind;
     }

@@ -6,10 +6,8 @@ import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
-import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.TypeFactory;
+import com.dat3m.dartagnan.expression.type.NullLiteral;
+import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.BranchEquivalence;
 import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
@@ -267,9 +265,17 @@ public final class EncodingContext {
         throw new UnsupportedOperationException(String.format("Unknown types for equal(%s,%s)", left, right));
     }
 
-    private IntegerFormula toInteger(Formula formula) {
+    public IntegerFormula toInteger(Formula formula) {
         if (formula instanceof IntegerFormula f) {
             return f;
+        }
+        if (formula instanceof TupleFormula f) {
+            IntegerFormulaManager ifm = formulaManager.getIntegerFormulaManager();
+            Formula sum = f.elements.get(0);
+            for(int c = 1; f.elements.size() > c; c++ ) {
+                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)f.elements.get(c));
+            }
+            return (NumeralFormula.IntegerFormula)sum;
         }
         if (formula instanceof BooleanFormula f) {
             IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
@@ -387,8 +393,24 @@ public final class EncodingContext {
                 return formulaManager.getBitvectorFormulaManager().makeBitvector(integerType.getBitWidth(), value);
             }
         }
+        if (type instanceof PointerType){
+            final List<Formula> elements = new ArrayList<>();
+            final IntegerFormula base = formulaManager.getIntegerFormulaManager().makeNumber(value);
+            final IntegerFormula offset = formulaManager.getIntegerFormulaManager().makeNumber(0);
+            elements.add(base);
+            elements.add(offset);
+            return tupleFormulaManager.makeTuple(elements);
+        } // TODO look up Expression encoder todo liner 382
+
         throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
     }
+    public Formula makeLiteral(Type type) {
+        if(type instanceof NullLiteral) {
+            return formulaManager.getIntegerFormulaManager().makeNumber(BigInteger.ZERO);
+        }
+        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
+    }
+
 
     private void initialize() {
         // ------- Control flow variables -------
@@ -460,6 +482,15 @@ public final class EncodingContext {
             for (Type eleType : primitives.values()) {
                 elements.add(makeVariable(name + "@" + elements.size(), eleType));
             }
+            return tupleFormulaManager.makeTuple(elements);
+        }
+        // TODO  big changes here
+        if (type instanceof PointerType) {
+            final List<Formula> elements = new ArrayList<>();
+            final IntegerFormula base = formulaManager.getIntegerFormulaManager().makeVariable("PtrBase" + name);
+            final IntegerFormula offset = formulaManager.getIntegerFormulaManager().makeVariable("PtrOffset" + name);
+            elements.add(base);
+            elements.add(offset);
             return tupleFormulaManager.makeTuple(elements);
         }
         throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));

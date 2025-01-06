@@ -13,7 +13,6 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.misc.ConstructExpr;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
 import com.dat3m.dartagnan.expression.type.BooleanType;

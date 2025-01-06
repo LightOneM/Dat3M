@@ -4,13 +4,15 @@ import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import java.math.BigInteger;
 import static java.util.Arrays.asList;
 
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
+import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
+import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.NullLiteral;
+import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
+import com.dat3m.dartagnan.expression.type.PointerType;
+import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import com.dat3m.dartagnan.expression.Expression;
@@ -22,11 +24,6 @@ import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
-import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
-import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.integers.IntSizeCast;
-import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -34,32 +31,32 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
-import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import java.math.BigInteger;
+import com.dat3m.dartagnan.program.Program; // added this to simplify the pointer cast but the access rights need to be changed in this case
+// TODO discuss the pattern needed to access the memory list
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkState;
-import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
-
     private static final TypeFactory types = TypeFactory.getInstance();
 
     private final EncodingContext context;
     private final FormulaManager formulaManager;
+    private final TupleFormulaManager tupleFormulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
     private final Event event;
+    // TODO bad structuring but can work
+    private final EncodingHelper helper;
 
     ExpressionEncoder(EncodingContext context, Event event) {
         this.context = context;
         this.formulaManager = context.getFormulaManager();
+        this.tupleFormulaManager = context.getTupleFormulaManager();
         this.booleanFormulaManager = formulaManager.getBooleanFormulaManager();
         this.event = event;
+        this.helper = new EncodingHelper(formulaManager, tupleFormulaManager);
     }
-
     private IntegerFormulaManager integerFormulaManager() {
         return formulaManager.getIntegerFormulaManager();
     }
@@ -339,10 +336,12 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         Type type = reg.getType();
         return context.makeVariable(name, type);
     }
-// TODO visit pointer returns a tuple then encode
+    // TODO visit pointer returns a tuple then encode
+
     @Override
     public Formula visitMemoryObject(MemoryObject memObj) {
-        return context.address(memObj);
+        // return context.address(memObj);
+        return context.makeVariable(memObj.getName(), memObj.getType()); // this actually makes a pointer
     }
 
     @Override
@@ -351,4 +350,56 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         int size = types.getMemorySizeInBits(val.getType());
         return context.lastValue(val.getMemoryObject(), val.getOffset(), size);
     }
+
+//    @Override
+//    public Formula visitFinalMemoryValue(FinalMemoryValue val) {
+//        checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
+//        int size = types.getMemorySizeInBits(val.getType());
+//        return context.lastValue(val.getMemoryObject(), val.getOffset(), size);
+//    }
+
+    // TODO continue here
+    @Override
+    public Formula visitPtrCmpExpression(PtrCmpExpr expr) {
+        final Formula left = encode(expr.getLeft());
+        final Formula right = encode(expr.getRight());
+        return switch (expr.getKind())
+        {
+            case EQ -> context.equal(left, right);
+            case NEQ -> context.getBooleanFormulaManager().not(context.equal(left, right));
+        }; }
+
+    @Override
+//    public Formula visitPtrAddOffsetExpression(PtrAddOffsetExpr expr) {
+//        final TupleFormula base = (TupleFormula) encode(expr.getBase());
+//        final Formula offset = encode(expr.getOffset());
+//        IntegerFormulaManager ifm = context.getFormulaManager().getIntegerFormulaManager();
+//        return ifm.add((NumeralFormula.IntegerFormula) base.elements.get(base.elements.size() - 1), (NumeralFormula.IntegerFormula) offset);
+//        // TODO this casting is suspicious
+//    }
+    public Formula visitPtrAddOffsetExpression(PtrAddOffsetExpr expr) {
+        final Formula base = encode(expr.getBase());
+        final Formula offset = encode(expr.getOffset());
+        return helper.add(base,offset);
+        // TODO this is suspicious. it will ignore errors and work even for integers and bvs
+    }
+    @Override
+    public Formula visitPtrToIntCastExpression(PtrToIntCast expr) {
+        Formula encoded = encode(expr.getOperand());
+        // TODO look this one up and make sure the cast works
+        return context.toInteger(encoded); // <---
+    }
+    @Override
+    public Formula visitIntToPtrCastExpression(IntToPtrCast expr){
+        List<Formula> tuples = new ArrayList<>();
+        Expression value = expr.getOperand();
+        tuples.add(encode(value));
+        tuples.add(context.makeLiteral(value.getType(),BigInteger.ZERO));// offset is zero for now, problems are expected because the comparison shouldn't work
+        return tupleFormulaManager.makeTuple(tuples); // TODO find a way to determine the base of the cast and the offset.
+    }
+    @Override
+    public Formula visitNullPointerLiteral(NullLiteral nullptr){
+        return context.makeLiteral(nullptr);
+    }
+
 }

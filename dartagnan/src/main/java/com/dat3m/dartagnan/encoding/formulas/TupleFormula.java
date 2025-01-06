@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.encoding.formulas;
 
 import org.sosy_lab.java_smt.api.Formula;
+import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,23 +13,24 @@ import java.util.stream.Collectors;
  */
 public class TupleFormula implements Formula {
 
-    final List<Formula> elements;
+    public final List<Formula> elements;
 
-    TupleFormula(List<Formula> elements) {
+    public TupleFormula(List<Formula> elements) {
         this.elements = elements;
     }
 
     @Override
     public String toString() {
-        return elements.stream()
+        return "Tuple:" + elements.stream()
                 .map(Object::toString)
-                .collect(Collectors.joining(",", "{ ", " }"));
+                .collect(Collectors.joining(",", "{", "}"));
     }
 
     @Override
     public int hashCode() {
         return elements.hashCode();
     }
+
 
     @Override
     public boolean equals(Object obj) {
