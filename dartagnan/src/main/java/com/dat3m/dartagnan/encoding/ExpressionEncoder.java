@@ -31,8 +31,6 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
-import com.dat3m.dartagnan.program.Program; // added this to simplify the pointer cast but the access rights need to be changed in this case
-// TODO discuss the pattern needed to access the memory list
 import java.util.ArrayList;
 import java.util.List;
 
