@@ -397,7 +397,12 @@ public final class ExpressionFactory {
 
     public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
         final Type type = leftOperand.getType();
-        if (type instanceof BooleanType) {
+        if (type instanceof PointerType) {
+            return makePtrCmp(leftOperand,PtrCmpOp.EQ, rightOperand);
+
+        }
+
+        else if (type instanceof BooleanType) {
             return makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
@@ -412,7 +417,9 @@ public final class ExpressionFactory {
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
         final Type type = leftOperand.getType();
-        if (type instanceof BooleanType) {
+        if (type instanceof PointerType) {
+            return makePtrCmp(leftOperand, PtrCmpOp.NEQ, rightOperand);
+        }else if (type instanceof BooleanType) {
             return makeNot(makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);

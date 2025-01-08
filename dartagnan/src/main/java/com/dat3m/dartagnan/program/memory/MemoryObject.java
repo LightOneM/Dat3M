@@ -40,7 +40,6 @@ public class MemoryObject extends LeafExpressionBase<PointerType> {
     private String name = null;
     private boolean isThreadLocal = false;
     private final Set<String> featureTags = new HashSet<>();
-
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
     MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, PointerType ptrType) {

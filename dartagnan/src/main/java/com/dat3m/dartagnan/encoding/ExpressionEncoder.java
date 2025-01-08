@@ -12,6 +12,8 @@ import com.dat3m.dartagnan.expression.type.NullLiteral;
 import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetExpr;
 import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
 import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.program.memory.Memory;
+import com.google.common.collect.ImmutableSet;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
@@ -338,8 +340,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
 
     @Override
     public Formula visitMemoryObject(MemoryObject memObj) {
-        // return context.address(memObj);
-        return context.makeVariable(memObj.getName(), memObj.getType()); // this actually makes a pointer
+        return context.address(memObj);
     }
 
     @Override
@@ -384,7 +385,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     @Override
     public Formula visitPtrToIntCastExpression(PtrToIntCast expr) {
         Formula encoded = encode(expr.getOperand());
-        // TODO look this one up and make sure the cast works
+        // TODO look this one up. How to get base and offset from expr; or shall we use memory
         return context.toInteger(encoded); // <---
     }
     @Override
@@ -392,12 +393,15 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         List<Formula> tuples = new ArrayList<>();
         Expression value = expr.getOperand();
         tuples.add(encode(value));
-        tuples.add(context.makeLiteral(value.getType(),BigInteger.ZERO));// offset is zero for now, problems are expected because the comparison shouldn't work
-        return tupleFormulaManager.makeTuple(tuples); // TODO find a way to determine the base of the cast and the offset.
+        tuples.add(context.makeLiteral(value.getType(),BigInteger.ZERO));
+        // context.address() ... implement context.base_address TODO everything bitvector
+        // if none s found (0,a)
+        return tupleFormulaManager.makeTuple(tuples);
     }
     @Override
     public Formula visitNullPointerLiteral(NullLiteral nullptr){
-        return context.makeLiteral(nullptr);
+       IntegerType inttype = types.getIntegerType(types.getMemorySizeInBits(nullptr.getType()));
+       Formula zero = context.makeLiteral(inttype,BigInteger.ZERO);
+        return tupleFormulaManager.makeTuple(List.of(zero,zero));
     }
-
 }

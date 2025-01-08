@@ -81,7 +81,7 @@ public final class EncodingContext {
     private final Map<Event, Formula> addresses = new HashMap<>();
     private final Map<Event, Formula> values = new HashMap<>();
     private final Map<Event, Formula> results = new HashMap<>();
-    private final Map<MemoryObject, Formula> objAddress = new HashMap<>();
+    private final Map<MemoryObject, Formula> objBases = new HashMap<>();
     private final Map<MemoryObject, Formula> objSize = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
@@ -271,11 +271,11 @@ public final class EncodingContext {
         }
         if (formula instanceof TupleFormula f) {
             IntegerFormulaManager ifm = formulaManager.getIntegerFormulaManager();
-            Formula sum = f.elements.get(0);
+            IntegerFormula sum = toInteger(f.elements.get(0));
             for(int c = 1; f.elements.size() > c; c++ ) {
-                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)f.elements.get(c));
+                sum = ifm.add(sum , toInteger(f.elements.get(c)));
             }
-            return (NumeralFormula.IntegerFormula)sum;
+            return sum;
         }
         if (formula instanceof BooleanFormula f) {
             IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
@@ -318,6 +318,13 @@ public final class EncodingContext {
             BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
             return bvmgr.equal(f, bvmgr.makeBitvector(bvmgr.getLength(f), 0));
         }
+        if (formula instanceof TupleFormula tpformula) {
+            BooleanFormula result = booleanFormulaManager.makeTrue();
+            for(Formula element : tpformula.elements) {
+                result = booleanFormulaManager.and(equalZero(element), result);
+            }
+            return result;
+        }
         throw new UnsupportedOperationException(String.format("Unknown type for equalZero(%s).", formula));
     }
 
@@ -329,9 +336,11 @@ public final class EncodingContext {
         return addresses.get(event);
     }
 
-    public Formula address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
+    public Formula address(MemoryObject memoryObject) { return tupleFormulaManager.makeTuple(List.of(objBases.get(memoryObject), makeLiteral(TypeFactory.getInstance().getArchType(),BigInteger.ZERO))); }
 
     public Formula size(MemoryObject memoryObject) { return objSize.get(memoryObject); }
+
+    public  Formula baseAddress(MemoryObject memoryObject) {return objBases.get(memoryObject); }
 
     public Formula value(MemoryEvent event) {
         return values.get(event);
@@ -393,24 +402,17 @@ public final class EncodingContext {
                 return formulaManager.getBitvectorFormulaManager().makeBitvector(integerType.getBitWidth(), value);
             }
         }
-        if (type instanceof PointerType){
-            final List<Formula> elements = new ArrayList<>();
-            final IntegerFormula base = formulaManager.getIntegerFormulaManager().makeNumber(value);
-            final IntegerFormula offset = formulaManager.getIntegerFormulaManager().makeNumber(0);
-            elements.add(base);
-            elements.add(offset);
-            return tupleFormulaManager.makeTuple(elements);
-        } // TODO look up Expression encoder todo liner 382
+//        if (type instanceof PointerType){
+//            final List<Formula> elements = new ArrayList<>();
+//            final IntegerFormula base = formulaManager.getIntegerFormulaManager().makeNumber(value);
+//            final IntegerFormula offset = formulaManager.getIntegerFormulaManager().makeNumber(0);
+//            elements.add(base);
+//            elements.add(offset);
+//            return tupleFormulaManager.makeTuple(elements);
+//        } // TODO look up Expression encoder todo liner 382
 
         throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
     }
-    public Formula makeLiteral(Type type) {
-        if(type instanceof NullLiteral) {
-            return formulaManager.getIntegerFormulaManager().makeNumber(BigInteger.ZERO);
-        }
-        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
-    }
-
 
     private void initialize() {
         // ------- Control flow variables -------
@@ -433,8 +435,9 @@ public final class EncodingContext {
 
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
-            objAddress.put(memoryObject, makeVariable(String.format("addrof(%s)", memoryObject), memoryObject.getType()));
-            objSize.put(memoryObject, makeVariable(String.format("sizeof(%s)", memoryObject), memoryObject.getType()));
+            Type archType = TypeFactory.getInstance().getArchType();
+            objBases.put(memoryObject, makeVariable(String.format("baseofof(%s)", memoryObject), archType));
+            objSize.put(memoryObject, makeVariable(String.format("sizeof(%s)", memoryObject), archType));
         }
 
         // ------- Event variables  -------
@@ -491,6 +494,7 @@ public final class EncodingContext {
             final IntegerFormula offset = formulaManager.getIntegerFormulaManager().makeVariable("PtrOffset" + name);
             elements.add(base);
             elements.add(offset);
+            // recursivly and encode as bitvecors
             return tupleFormulaManager.makeTuple(elements);
         }
         throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));

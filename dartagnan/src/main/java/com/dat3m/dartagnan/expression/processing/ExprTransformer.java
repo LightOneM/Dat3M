@@ -17,6 +17,7 @@ import com.dat3m.dartagnan.expression.pointers.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
 import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.util.ArrayList;
@@ -120,13 +121,16 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
         return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
     }
 
+
+        // TODO implrmrnt recursive decent
     @Override
     public Expression visitLeafExpression(LeafExpression expr) {
         return expr;
     }
     @Override
     public Expression visitPtrAddOffsetExpression(PtrAddOffsetExpr expr){
-        return expr;
+        return expressions.makePtrAddOffset(expr.getBase().accept(this), expr.getOffset().accept(this));
     }
+    @Override
+    public Expression visitPtrCmpExpression(PtrCmpExpr expr){return expressions.makePtrCmp(expr.getLeft().accept(this), expr.getKind(), expr.getRight().accept(this));}
 }
-// TODO add all missing

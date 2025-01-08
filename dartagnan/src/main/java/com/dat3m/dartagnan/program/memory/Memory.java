@@ -16,14 +16,12 @@ public class Memory {
 
     private final ArrayList<MemoryObject> objects = new ArrayList<>();
     private final PointerType ptrType = TypeFactory.getInstance().getPointerType();
-
     private final IntegerType archType = TypeFactory.getInstance().getArchType();
     private final Expression defaultAlignment = ExpressionFactory.getInstance().makeValue(8, archType);
-
     private int nextIndex = 1;
 
-    // allocates null pointer, should be run only once and can't be derferenced
-    // TODO ask about this
+    // allocates null pointer, should be instanced only once and can't be dereferenced? the result will always be implementation specific and never a memory address?
+    // TODO ask about this, is null even allocatable? can it be cast?
 
     public MemoryObject allocate_null() {
         final Expression sizeExpr = ExpressionFactory.getInstance().makeValue(0, archType);

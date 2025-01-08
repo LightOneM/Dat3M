@@ -100,19 +100,19 @@ public class EncodingHelper {
             }
             return sum;
         }
-        // TODO so much casting
         if (left instanceof TupleFormula tpLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
             IntegerFormulaManager ifm = fmgr.getIntegerFormulaManager();
             Formula base = tpLeft.elements.get(0);
-            Formula sum = tpLeft.elements.get(1);
-            for(int c = 1; tpLeft.elements.size() > c; c++) {
-                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpLeft.elements.get(c));
-            }
-            sum = ifm.add((NumeralFormula.IntegerFormula) sum, iRight);
-            List<Formula> tuples = new ArrayList<>();
-            tuples.add(base);
-            tuples.add(sum);
-            return tfmgr.makeTuple(tuples);
+            Formula a = tpLeft.elements.get(1);
+            a = ifm.add((NumeralFormula.IntegerFormula) a, iRight);
+            return tfmgr.makeTuple(List.of(base,a));
+        }
+        if (left instanceof TupleFormula tpLeft && right instanceof BitvectorFormula iRight) {
+            BitvectorFormulaManager bvfm = fmgr.getBitvectorFormulaManager();
+            Formula base = tpLeft.elements.get(0);
+            Formula a = tpLeft.elements.get(1);
+            a = bvfm.add((BitvectorFormula) a, iRight);
+            return tfmgr.makeTuple(List.of(base,a));
         }
 
         throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);

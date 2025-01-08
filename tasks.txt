@@ -19,14 +19,3 @@ mvn -Dmaven.test.skip=true install
 
     
 
-
-
-
-
-NOTES:
-    PtrBinaryOp is problematic as pointer diff can be undefined
-    Pointed comparaison should be added anyway
-
-
-Int to pointer during the encoding only
-Questions: what is arch type

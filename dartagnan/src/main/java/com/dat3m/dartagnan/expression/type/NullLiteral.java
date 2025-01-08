@@ -4,7 +4,7 @@ import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 
-public final class NullLiteral extends LeafExpressionBase<PointerType> implements Type{
+public final class NullLiteral extends LeafExpressionBase<PointerType>{
 
 
     public NullLiteral(PointerType type) {
