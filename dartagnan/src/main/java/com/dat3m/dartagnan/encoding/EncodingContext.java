@@ -59,6 +59,9 @@ public final class EncodingContext {
     private final FormulaManager formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
     private final TupleFormulaManager tupleFormulaManager;
+    private final BitvectorFormulaManager bitvectorFormulaManager;
+
+    private final int ptrBitWidth = TypeFactory.getInstance().getArchType().getBitWidth();
 
     @Option(
             name=IDL_TO_SAT,
@@ -94,6 +97,7 @@ public final class EncodingContext {
         formulaManager = m;
         booleanFormulaManager = m.getBooleanFormulaManager();
         tupleFormulaManager = new TupleFormulaManager(this);
+        bitvectorFormulaManager = m.getBitvectorFormulaManager();
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
@@ -111,6 +115,19 @@ public final class EncodingContext {
         }
         return context;
     }
+    public List<List<BitvectorFormula>> getObjBasesAndSizesList(){
+
+        List<List<BitvectorFormula>> result = new ArrayList<>();
+        for (MemoryObject memobj : objBases.keySet()) {
+            result.add(List.of(
+                    toBitvector(objBases.get(memobj),ptrBitWidth),
+                    toBitvector(objSize.get(memobj),ptrBitWidth)
+            )
+            );
+        }
+        return result;
+    }
+
 
     public boolean usesSATEncoding() {
         return useSATEncoding;
@@ -134,6 +151,10 @@ public final class EncodingContext {
 
     public TupleFormulaManager getTupleFormulaManager() {
         return tupleFormulaManager;
+    }
+
+    public int getPtrBitWidth(){
+        return ptrBitWidth;
     }
 
     public Formula encodeFinalExpression(Expression expression) {
@@ -174,14 +195,13 @@ public final class EncodingContext {
             };
         }
         if (lhs instanceof BitvectorFormula l && rhs instanceof BitvectorFormula r) {
-            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
             return switch (op) {
-                case EQ -> bvmgr.equal(l, r);
-                case NEQ -> booleanFormulaManager.not(bvmgr.equal(l, r));
-                case LT, ULT -> bvmgr.lessThan(l, r, op.equals(IntCmpOp.LT));
-                case LTE, ULTE -> bvmgr.lessOrEquals(l, r, op.equals(IntCmpOp.LTE));
-                case GT, UGT -> bvmgr.greaterThan(l, r, op.equals(IntCmpOp.GT));
-                case GTE, UGTE -> bvmgr.greaterOrEquals(l, r, op.equals(IntCmpOp.GTE));
+                case EQ -> bitvectorFormulaManager.equal(l, r);
+                case NEQ -> booleanFormulaManager.not(bitvectorFormulaManager.equal(l, r));
+                case LT, ULT -> bitvectorFormulaManager.lessThan(l, r, op.equals(IntCmpOp.LT));
+                case LTE, ULTE -> bitvectorFormulaManager.lessOrEquals(l, r, op.equals(IntCmpOp.LTE));
+                case GT, UGT -> bitvectorFormulaManager.greaterThan(l, r, op.equals(IntCmpOp.GT));
+                case GTE, UGTE -> bitvectorFormulaManager.greaterOrEquals(l, r, op.equals(IntCmpOp.GTE));
             };
         }
         throw new UnsupportedOperationException("Encoding not supported for IntCmpOp: " + lhs + " " + op + " " + rhs);
@@ -232,7 +252,7 @@ public final class EncodingContext {
         if (useIntegers) {
             return formulaManager.getIntegerFormulaManager().makeVariable(name);
         }
-        return formulaManager.getBitvectorFormulaManager().makeVariable(size, name);
+        return bitvectorFormulaManager.makeVariable(size, name);
     }
 
     public BooleanFormula equal(Formula left, Formula right) {
@@ -249,12 +269,10 @@ public final class EncodingContext {
             return imgr.equal(toInteger(left), r);
         }
         if (left instanceof BitvectorFormula l) {
-            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
-            return bvmgr.equal(l, toBitvector(right, bvmgr.getLength(l)));
+            return bitvectorFormulaManager.equal(l, toBitvector(right, bitvectorFormulaManager.getLength(l)));
         }
         if (right instanceof BitvectorFormula r) {
-            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
-            return bvmgr.equal(toBitvector(left, bvmgr.getLength(r)), r);
+            return bitvectorFormulaManager.equal(toBitvector(left, bitvectorFormulaManager.getLength(r)), r);
         }
         if (left instanceof BooleanFormula l && right instanceof BooleanFormula r) {
             return booleanFormulaManager.equivalence(l, r);
@@ -284,23 +302,22 @@ public final class EncodingContext {
             return booleanFormulaManager.ifThenElse(f, one, zero);
         }
         if (formula instanceof BitvectorFormula f) {
-            return formulaManager.getBitvectorFormulaManager().toIntegerFormula(f, false);
+            return bitvectorFormulaManager.toIntegerFormula(f, false);
         }
         throw new UnsupportedOperationException(String.format("Unknown type for toInteger(%s).", formula));
     }
 
     private BitvectorFormula toBitvector(Formula formula, int length) {
-        BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
         if (formula instanceof BitvectorFormula f) {
-            int formulaLength = bvmgr.getLength(f);
+            int formulaLength = bitvectorFormulaManager.getLength(f);
             // FIXME: Signedness may be wrong here.
             return formulaLength >= length ?
-                    bvmgr.extract(f, length - 1, 0)
-                    : bvmgr.extend(f, length - formulaLength, false);
+                    bitvectorFormulaManager.extract(f, length - 1, 0)
+                    : bitvectorFormulaManager.extend(f, length - formulaLength, false);
         }
         if (formula instanceof BooleanFormula f) {
-            BitvectorFormula zero = bvmgr.makeBitvector(length, 0);
-            BitvectorFormula one = bvmgr.makeBitvector(length, 1);
+            BitvectorFormula zero = bitvectorFormulaManager.makeBitvector(length, 0);
+            BitvectorFormula one = bitvectorFormulaManager.makeBitvector(length, 1);
             return booleanFormulaManager.ifThenElse(f, one, zero);
         }
         throw new UnsupportedOperationException(String.format("Unknown type for toBitvector(%s,%s).", formula, length));
@@ -315,8 +332,7 @@ public final class EncodingContext {
             return imgr.equal(f, imgr.makeNumber(0));
         }
         if (formula instanceof BitvectorFormula f) {
-            BitvectorFormulaManager bvmgr = formulaManager.getBitvectorFormulaManager();
-            return bvmgr.equal(f, bvmgr.makeBitvector(bvmgr.getLength(f), 0));
+            return bitvectorFormulaManager.equal(f, bitvectorFormulaManager.makeBitvector(bitvectorFormulaManager.getLength(f), 0));
         }
         if (formula instanceof TupleFormula tpformula) {
             BooleanFormula result = booleanFormulaManager.makeTrue();
@@ -399,18 +415,9 @@ public final class EncodingContext {
             if (useIntegers) {
                 return formulaManager.getIntegerFormulaManager().makeNumber(value);
             } else {
-                return formulaManager.getBitvectorFormulaManager().makeBitvector(integerType.getBitWidth(), value);
+                return bitvectorFormulaManager.makeBitvector(integerType.getBitWidth(), value);
             }
         }
-//        if (type instanceof PointerType){
-//            final List<Formula> elements = new ArrayList<>();
-//            final IntegerFormula base = formulaManager.getIntegerFormulaManager().makeNumber(value);
-//            final IntegerFormula offset = formulaManager.getIntegerFormulaManager().makeNumber(0);
-//            elements.add(base);
-//            elements.add(offset);
-//            return tupleFormulaManager.makeTuple(elements);
-//        } // TODO look up Expression encoder todo liner 382
-
         throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
     }
 
@@ -436,8 +443,9 @@ public final class EncodingContext {
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
             Type archType = TypeFactory.getInstance().getArchType();
-            objBases.put(memoryObject, makeVariable(String.format("baseofof(%s)", memoryObject), archType));
-            objSize.put(memoryObject, makeVariable(String.format("sizeof(%s)", memoryObject), archType));
+            // TODO this should be changed to bitvector???
+            objBases.put(memoryObject, bitvectorFormulaManager.makeVariable(ptrBitWidth,String.format("baseofof(%s)", memoryObject)));
+            objSize.put(memoryObject, bitvectorFormulaManager.makeVariable(ptrBitWidth, String.format("sizeof(%s)", memoryObject)));
         }
 
         // ------- Event variables  -------
@@ -476,7 +484,7 @@ public final class EncodingContext {
             if (useIntegers) {
                 return formulaManager.getIntegerFormulaManager().makeVariable(name);
             } else {
-                return formulaManager.getBitvectorFormulaManager().makeVariable(integerType.getBitWidth(), name);
+                return bitvectorFormulaManager.makeVariable(integerType.getBitWidth(), name);
             }
         }
         if (type instanceof AggregateType) {
@@ -487,15 +495,11 @@ public final class EncodingContext {
             }
             return tupleFormulaManager.makeTuple(elements);
         }
-        // TODO  big changes here
         if (type instanceof PointerType) {
-            final List<Formula> elements = new ArrayList<>();
-            final IntegerFormula base = formulaManager.getIntegerFormulaManager().makeVariable("PtrBase" + name);
-            final IntegerFormula offset = formulaManager.getIntegerFormulaManager().makeVariable("PtrOffset" + name);
-            elements.add(base);
-            elements.add(offset);
-            // recursivly and encode as bitvecors
-            return tupleFormulaManager.makeTuple(elements);
+            final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrBase" + name);
+            final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrOffset" + name);
+            // TODO recursively?
+            return tupleFormulaManager.makeTuple(List.of(base, offset));
         }
         throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
     }

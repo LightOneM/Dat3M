@@ -87,25 +87,26 @@ public class EncodingHelper {
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
             return fmgr.getBitvectorFormulaManager().add(bvLeft, bvRight);
         }
-        if (left instanceof TupleFormula tpLeft && right instanceof TupleFormula tpRight) {
-            // We dont support pointer addition ?? does it happen? throw exceptions?
-            //TODO the second part should not be a base pointer. to be enforced later on
-            IntegerFormulaManager ifm = fmgr.getIntegerFormulaManager();
-            Formula sum = tpLeft.elements.get(0);
-            for(int c = 1; tpLeft.elements.size() > c; c++) {
-                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpLeft.elements.get(c));
-            }
-            for(int c = 1; tpRight.elements.size() > c; c++) {
-                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpRight.elements.get(c));
-            }
-            return sum;
-        }
+//        if (left instanceof TupleFormula tpLeft && right instanceof TupleFormula tpRight) {
+//            // We dont support pointer addition ?? does it happen? throw exceptions?
+//            //TODO the second part should not be a base pointer. to be enforced later on
+//            IntegerFormulaManager ifm = fmgr.getIntegerFormulaManager();
+//            Formula sum = tpLeft.elements.get(0);
+//            for(int c = 1; tpLeft.elements.size() > c; c++) {
+//                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpLeft.elements.get(c));
+//            }
+//            for(int c = 1; tpRight.elements.size() > c; c++) {
+//                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpRight.elements.get(c));
+//            }
+//            return sum;
+//        }
         if (left instanceof TupleFormula tpLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
-            IntegerFormulaManager ifm = fmgr.getIntegerFormulaManager();
+            BitvectorFormulaManager bvfm = fmgr.getBitvectorFormulaManager();
             Formula base = tpLeft.elements.get(0);
-            Formula a = tpLeft.elements.get(1);
-            a = ifm.add((NumeralFormula.IntegerFormula) a, iRight);
-            return tfmgr.makeTuple(List.of(base,a));
+            BitvectorFormula offset = (BitvectorFormula) tpLeft.elements.get(1);
+            BitvectorFormula addedValue = bvfm.makeBitvector(bvfm.getLength(offset),iRight);
+            offset = bvfm.add( offset, addedValue);
+            return tfmgr.makeTuple(List.of(base,offset));
         }
         if (left instanceof TupleFormula tpLeft && right instanceof BitvectorFormula iRight) {
             BitvectorFormulaManager bvfm = fmgr.getBitvectorFormulaManager();

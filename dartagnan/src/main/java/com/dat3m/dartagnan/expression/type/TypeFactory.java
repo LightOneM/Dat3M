@@ -123,6 +123,7 @@ public final class TypeFactory {
         return getIntegerType(64); // TODO ask about this
     }
 
+
     public IntegerType getByteType() {
         return getIntegerType(8);
     }
