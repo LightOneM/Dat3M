@@ -10,6 +10,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class EncodingHelper {
 
     private final FormulaManager fmgr;
@@ -42,10 +43,23 @@ public class EncodingHelper {
             }
             return equals(left_sum, iRight);
         }
+        if (left instanceof TupleFormula tpLeft && right instanceof BitvectorFormula iRight) {
+            BitvectorFormulaManager bvfm = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula left_sum = (BitvectorFormula) tpLeft.elements.get(0);
+            for(int c = 1; tpLeft.elements.size() > c; c++ ) {
+                left_sum = bvfm.add(left_sum , (BitvectorFormula) tpLeft.elements.get(c));
+            }
+            return equals(left_sum, iRight);
+        }// TODO ? saw an add function somewhere ?
         if(left instanceof TupleFormula tfLeft && right instanceof TupleFormula tfRight) {
             return tfmgr.equal(tfLeft,tfRight);
         }
-        throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right );
+        if(left instanceof BitvectorFormula tfLeft && right instanceof NumeralFormula.IntegerFormula tfRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula tfRight_bv = bvmgr.makeBitvector(64,tfRight);// TODO make 64 dynamic
+            return bvmgr.equal(tfLeft,tfRight_bv);
+        }
+        throw new UnsupportedOperationException("Mismatching types: <" + left + " " + left.getClass().getName() + "> and <" + right + " " +right.getClass().getName()+">");
     }
     // TODO add pointer to equal?
 
@@ -111,9 +125,8 @@ public class EncodingHelper {
         if (left instanceof TupleFormula tpLeft && right instanceof BitvectorFormula iRight) {
             BitvectorFormulaManager bvfm = fmgr.getBitvectorFormulaManager();
             Formula base = tpLeft.elements.get(0);
-            Formula a = tpLeft.elements.get(1);
-            a = bvfm.add((BitvectorFormula) a, iRight);
-            return tfmgr.makeTuple(List.of(base,a));
+            BitvectorFormula new_offset = bvfm.add((BitvectorFormula) tpLeft.elements.get(1), iRight);
+            return tfmgr.makeTuple(List.of(base,new_offset));
         }
 
         throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);
@@ -127,8 +140,23 @@ public class EncodingHelper {
         if (left instanceof BitvectorFormula bvLeft && right instanceof BitvectorFormula bvRight) {
             final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
-            return fmgr.getBitvectorFormulaManager().subtract(bvLeft, bvRight);
+            return bvmgr.subtract(bvLeft, bvRight);
         }
+
+        if (left instanceof BitvectorFormula bvLeft && right instanceof NumeralFormula.IntegerFormula intRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula bvRight = bvmgr.makeBitvector(bvmgr.getLength(bvLeft), intRight);
+            return bvmgr.subtract(bvLeft, bvRight);
+        }
+
+        if (left instanceof NumeralFormula.IntegerFormula intLeft && right instanceof BitvectorFormula bvRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula bvLeft = bvmgr.makeBitvector(bvmgr.getLength(bvRight), intLeft);
+            return bvmgr.subtract(bvLeft, bvRight);
+        }
+
+
+
 
         throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);
     }
@@ -144,7 +172,18 @@ public class EncodingHelper {
         if (left instanceof BitvectorFormula bvLeft && right instanceof BitvectorFormula bvRight) {
             final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
-            return fmgr.getBitvectorFormulaManager().smodulo(bvLeft, bvRight);
+            return bvmgr.smodulo(bvLeft, bvRight);
+        }
+        if (left instanceof BitvectorFormula bvLeft && right instanceof NumeralFormula.IntegerFormula intRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula bvRight = bvmgr.makeBitvector(bvmgr.getLength(bvLeft),intRight);
+            return bvmgr.smodulo(bvLeft, bvRight);
+        }
+
+        if (left instanceof NumeralFormula.IntegerFormula intLeft && right instanceof BitvectorFormula bvRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula bvLeft = bvmgr.makeBitvector(bvmgr.getLength(bvRight), intLeft);
+            return bvmgr.smodulo(bvLeft, bvRight);
         }
 
         throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);

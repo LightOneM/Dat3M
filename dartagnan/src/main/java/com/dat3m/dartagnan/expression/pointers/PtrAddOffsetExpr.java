@@ -17,33 +17,33 @@ import java.util.Objects;
 
 
 public final class PtrAddOffsetExpr extends ExpressionBase<PointerType> {
-    final Expression base;
-    final Expression offset;
+    final Expression base_pointer;
+    final Expression added_offset;
     final ExpressionKind kind = ExpressionKind.Other.PTR_OFFSET;
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    public PtrAddOffsetExpr(Expression base, Expression offset) {
+    public PtrAddOffsetExpr(Expression base, Expression added_offset) {
         super((PointerType) base.getType());
         // base is forced to be a ptr because we assume offset + ptr does not exist in llvm.
-        ExpressionHelper.checkExpectedType(offset, IntegerType.class);
+        ExpressionHelper.checkExpectedType(added_offset, IntegerType.class);
         ExpressionHelper.checkExpectedType(base, PointerType.class);
-        Preconditions.checkArgument(offset.getType().equals(types.getArchType()),"Pointer offset addition of integer with non archType size");
-        this.base = base;
-        this.offset = offset;
+        Preconditions.checkArgument(added_offset.getType().equals(types.getArchType()),"Pointer offset addition of integer with non archType size");
+        this.base_pointer = base;
+        this.added_offset = added_offset;
     }
 
-    public Expression getBase() { return base; }
-    public Expression getOffset() { return offset; }
+    public Expression getBasePointerVal() { return base_pointer; }
+    public Expression getAddedOffset() { return added_offset; }
 
     @Override
-    public List<Expression> getOperands() { return List.of(base, offset); }
+    public List<Expression> getOperands() { return List.of(base_pointer, added_offset); }
 
     @Override
     public ExpressionKind getKind() { return kind; }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, kind, base, offset);
+        return Objects.hash(type, kind, base_pointer, added_offset);
     }
 
 
@@ -56,9 +56,9 @@ public final class PtrAddOffsetExpr extends ExpressionBase<PointerType> {
     public boolean equals(Object obj) {
         return (obj instanceof PtrAddOffsetExpr expr
                 && kind.equals(expr.kind)
-                && base.equals(expr.base)
-                && offset.equals(expr.offset));
+                && base_pointer.equals(expr.base_pointer)
+                && added_offset.equals(expr.added_offset));
     }
     @Override
-    public String toString() {return base.toString() + " P{+} " + offset.toString();}
+    public String toString() {return base_pointer.toString() + " P{+} " + added_offset.toString();}
 }

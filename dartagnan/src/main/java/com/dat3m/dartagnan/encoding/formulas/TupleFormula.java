@@ -3,6 +3,7 @@ package com.dat3m.dartagnan.encoding.formulas;
 import org.sosy_lab.java_smt.api.Formula;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,8 +16,13 @@ public class TupleFormula implements Formula {
 
     public final List<Formula> elements;
 
-    public TupleFormula(List<Formula> elements) {
-        this.elements = elements;
+    TupleFormula(List<Formula> elements) {
+        this.elements = ImmutableList.copyOf(elements);
+    }
+
+
+    public List<Formula> getElements() {
+        return elements;
     }
 
     @Override

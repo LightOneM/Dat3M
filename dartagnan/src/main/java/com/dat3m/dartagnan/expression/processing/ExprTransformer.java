@@ -129,7 +129,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     }
     @Override
     public Expression visitPtrAddOffsetExpression(PtrAddOffsetExpr expr){
-        return expressions.makePtrAddOffset(expr.getBase().accept(this), expr.getOffset().accept(this));
+        return expressions.makePtrAddOffset(expr.getBasePointerVal().accept(this), expr.getAddedOffset().accept(this));
     }
     @Override
     public Expression visitPtrCmpExpression(PtrCmpExpr expr){return expressions.makePtrCmp(expr.getLeft().accept(this), expr.getKind(), expr.getRight().accept(this));}

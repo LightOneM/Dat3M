@@ -47,7 +47,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     private final BooleanFormulaManager booleanFormulaManager;
     private final BitvectorFormulaManager bitvectorFormulaManager;
     private final Event event;
-    // TODO bad structuring but can work
+    // TODO bad structuring but works
     private final EncodingHelper helper;
 
     ExpressionEncoder(EncodingContext context, Event event) {
@@ -367,9 +367,11 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         }; }
 
     public Formula visitPtrAddOffsetExpression(PtrAddOffsetExpr expr) {
-        final Formula base = encode(expr.getBase());
-        final Formula offset = encode(expr.getOffset());
-        return helper.add(base,offset);
+        final Formula base_pointer = encode(expr.getBasePointerVal()); //(base,offset)
+        IntegerFormula added_offset = (IntegerFormula) encode(expr.getAddedOffset());// offset to be added
+        BitvectorFormula added_offset_bv = bitvectorFormulaManager.makeBitvector(types.getArchType().getBitWidth(),added_offset);
+        // TODO previous function break pointers with int values (int,int), to be added later
+        return helper.add(base_pointer,added_offset_bv);
     }
     @Override
     public Formula visitPtrToIntCastExpression(PtrToIntCast expr) {

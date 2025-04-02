@@ -352,7 +352,7 @@ public final class EncodingContext {
         return addresses.get(event);
     }
 
-    public Formula address(MemoryObject memoryObject) { return tupleFormulaManager.makeTuple(List.of(objBases.get(memoryObject), makeLiteral(TypeFactory.getInstance().getArchType(),BigInteger.ZERO))); }
+    public Formula address(MemoryObject memoryObject) { return tupleFormulaManager.makeTuple(List.of(objBases.get(memoryObject), bitvectorFormulaManager.makeBitvector(TypeFactory.getInstance().getArchType().getBitWidth(),BigInteger.ZERO))); }
 
     public Formula size(MemoryObject memoryObject) { return objSize.get(memoryObject); }
 
