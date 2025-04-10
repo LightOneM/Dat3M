@@ -20,7 +20,7 @@ public final class GEPExpr extends NaryExpressionBase<PointerType, ExpressionKin
     private final Type indexingType;
 
     public GEPExpr(Type indexType, Expression base, List<Expression> offsets) {
-        super((PointerType)base.getType(), ExpressionKind.Other.GEP, concat(base, offsets));
+        super((PointerType)base.getType(), ExpressionKind.Other.GEP, ImmutableList.copyOf(concat(base, offsets)));
         ExpressionHelper.checkExpectedType(base, PointerType.class); //TODO check indexing types / low priority
         if (offsets.size() > 1) {
             Preconditions.checkArgument(indexType instanceof AggregateType || indexType instanceof ArrayType,
@@ -33,7 +33,7 @@ public final class GEPExpr extends NaryExpressionBase<PointerType, ExpressionKin
         final List<Expression> ops = new ArrayList<>(offsets.size() + 1);
         ops.add(base);
         ops.addAll(offsets);
-        return ops;
+        return List.copyOf(ops);
     }
 
     public Type getIndexingType() {

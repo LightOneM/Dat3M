@@ -228,11 +228,13 @@ public class EncodingHelper {
             if (x.getElements().size() != y.getElements().size()) {
                 return false;
             }
-            return IntStream.range(0, x.getElements().size()).allMatch(
-                    i -> hasSameType(x.getElements().get(i), y.getElements().get(i))
-            );
+            for (int i = 0; i < x.getElements().size(); i++) {
+                if (!hasSameType(x.getElements().get(i),y.getElements().get(i))){
+                    return false;
+                }
+            }
+            return true;
         }
-
         return false;
     }
 

@@ -10,6 +10,7 @@ import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.Objects;
@@ -36,7 +37,7 @@ public final class PtrAddOffsetExpr extends ExpressionBase<PointerType> {
     public Expression getAddedOffset() { return added_offset; }
 
     @Override
-    public List<Expression> getOperands() { return List.of(base_pointer, added_offset); }
+    public ImmutableList<Expression> getOperands() { return ImmutableList.copyOf(List.of(base_pointer, added_offset)); }
 
     @Override
     public ExpressionKind getKind() { return kind; }

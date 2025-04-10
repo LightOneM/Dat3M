@@ -29,7 +29,6 @@ import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.type.NullLiteral;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.expression.type.AggregateType;
 import com.dat3m.dartagnan.expression.type.ArrayType;
@@ -58,23 +57,6 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.program.event.Tag.INIT;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -313,8 +295,8 @@ public final class EncodingContext {
     public BooleanFormula equal(Formula left, Formula right, ConversionMode cMode) {
         if (cMode == ConversionMode.LEFT_TO_RIGHT) {
             return equal(right, left, ConversionMode.RIGHT_TO_LEFT);
-        } else if (cMode == ConversionMode.NO && !new EncodingHelper(formulaManager).hasSameType(left, right)) {
-            final String error = String.format("Mismatching formula types: %s and %s", left, right);
+        } else if (cMode == ConversionMode.NO && !new EncodingHelper(formulaManager,tupleFormulaManager).hasSameType(left, right)) {
+            final String error = String.format("Mismatching formula types: %s(%s) and %s(%s)", left,left.getClass() , right,right.getClass());
             throw new IllegalArgumentException(error);
         }
 

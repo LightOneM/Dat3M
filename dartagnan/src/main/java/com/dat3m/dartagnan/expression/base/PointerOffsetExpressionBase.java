@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.program.event.common.NoInterface;
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +32,7 @@ public abstract class PointerOffsetExpressionBase<TType extends Type, TKind exte
     public Expression getOffset() { return offset; }
 
     @Override
-    public List<Expression> getOperands() { return List.of(base, offset); }
+    public ImmutableList<Expression> getOperands() { return (ImmutableList<Expression>) List.of(base, offset); }
 
     @Override
     public TKind getKind() { return kind; }

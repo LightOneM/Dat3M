@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.dat3m.dartagnan.expression.aggregates.*;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryOp;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
@@ -30,10 +31,6 @@ import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
 import com.dat3m.dartagnan.expression.integers.IntUnaryOp;
 import com.dat3m.dartagnan.expression.integers.PtrToIntCast;
 import com.dat3m.dartagnan.expression.pointers.*;
-import com.dat3m.dartagnan.expression.aggregates.AggregateCmpExpr;
-import com.dat3m.dartagnan.expression.aggregates.AggregateCmpOp;
-import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
-import com.dat3m.dartagnan.expression.aggregates.ExtractExpr;
 import com.dat3m.dartagnan.expression.pointers.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.*;
@@ -383,8 +380,8 @@ public final class ExpressionFactory {
             }
             return makeArray(arrayType.getElementType(), zeroes, true);
         } else if (type instanceof AggregateType structType) {
-            List<Expression> zeroes = new ArrayList<>(structType.getTypeOffsets().size());
-            for (TypeOffset typeOffset : structType.getTypeOffsets()) {
+            List<Expression> zeroes = new ArrayList<>(structType.getFields().size());
+            for (TypeOffset typeOffset : structType.getFields()) {
                 zeroes.add(makeGeneralZero(typeOffset.type()));
             }
             return makeConstruct(structType, zeroes);

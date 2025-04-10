@@ -37,6 +37,7 @@ public final class TupleFormulaManager {
         return bmgr.and(enc);
     }
 
+
     public Formula extract(TupleFormula f, int index) {
         Preconditions.checkArgument(0 <= index && index < f.elements.size());
         return f.elements.get(index);
