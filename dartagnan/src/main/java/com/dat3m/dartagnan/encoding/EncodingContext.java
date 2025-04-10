@@ -167,6 +167,9 @@ public final class EncodingContext {
     public TupleFormulaManager getTupleFormulaManager() {
         return tupleFormulaManager;
     }
+    public BitvectorFormulaManager getBitvectorFormulaManager() {
+        return bitvectorFormulaManager;
+    }
 
     public int getPtrBitWidth(){
         return ptrBitWidth;
