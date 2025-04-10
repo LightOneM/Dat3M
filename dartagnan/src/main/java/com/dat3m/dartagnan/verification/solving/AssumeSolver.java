@@ -60,6 +60,9 @@ public class AssumeSolver extends ModelChecker {
         logger.info("Starting encoding using " + ctx.getVersion());
         prover.writeComment("Program encoding");
         prover.addConstraint(programEncoder.encodeFullProgram());
+        BooleanFormula progEnc = ctx.getFormulaManager().simplify(programEncoder.encodeFullProgram());
+        System.out.println(progEnc);
+
         prover.writeComment("Memory model encoding");
         prover.addConstraint(wmmEncoder.encodeFullMemoryModel());
         // For validation this contains information.

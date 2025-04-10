@@ -1,5 +1,11 @@
 package com.dat3m.dartagnan.program.memory;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
@@ -7,34 +13,36 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
 import com.dat3m.dartagnan.expression.base.LeafExpressionBase;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.program.event.core.Alloc;
 import com.google.common.base.Preconditions;
-
-import java.util.*;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Associated with an array of memory locations.
  */
-public class MemoryObject extends LeafExpressionBase<Type> {
+public class MemoryObject extends LeafExpressionBase<PointerType> {
 
     // TODO: (TH) I think <id> is mostly useless.
     //  Its only benefit is that we can have different memory objects with the same name (but why would we?)
+    // TODO ASK
     private final int id;
     private final Expression size;
     private final Expression alignment;
     private final Alloc allocationSite;
-
     private String name = null;
     private boolean isThreadLocal = false;
     private final Set<String> featureTags = new HashSet<>();
-
     private final Map<Integer, Expression> initialValues = new TreeMap<>();
 
-    MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, Type ptrType) {
+    MemoryObject(int id, Expression size, Expression alignment, Alloc allocationSite, PointerType ptrType) {
         super(ptrType);
         final TypeFactory types = TypeFactory.getInstance();
         Preconditions.checkArgument(size.getType() instanceof IntegerType, "Size %s must be of integer type.", size);
@@ -123,7 +131,8 @@ public class MemoryObject extends LeafExpressionBase<Type> {
                 setInitialValue(offset + innerOffset, structElements.get(i));
             }
         } else if (value.getType() instanceof IntegerType
-                || value.getType() instanceof BooleanType) {
+                || value.getType() instanceof BooleanType
+                || value.getType() instanceof PointerType){//added this for pointer compatibility ask
             checkArgument(isInRange(offset), "array index out of bounds");
             initialValues.put(offset, value);
         } else {

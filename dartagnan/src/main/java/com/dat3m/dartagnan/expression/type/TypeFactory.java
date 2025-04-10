@@ -11,8 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
+import com.dat3m.dartagnan.expression.Type;
+import com.dat3m.dartagnan.utils.Normalizer;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import com.google.common.math.IntMath;
 
 public final class TypeFactory {
 
@@ -20,16 +23,15 @@ public final class TypeFactory {
 
     private final VoidType voidType = new VoidType();
     private final BooleanType booleanType = new BooleanType();
-    private final IntegerType pointerDifferenceType;
-
+    private final IntegerType archType ;
+    private final PointerType pointerType = new PointerType();
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
-        pointerDifferenceType = getIntegerType(64);//TODO insert proper pointer and difference types
+        archType = getIntegerType(64);
     }
 
 
-    //TODO make this part of the program.
     public static TypeFactory getInstance() {
         return instance;
     }
@@ -40,12 +42,12 @@ public final class TypeFactory {
 
     public VoidType getVoidType() { return voidType; }
 
-    public Type getPointerType() {
-        return pointerDifferenceType;
+    public PointerType getPointerType() {
+        return pointerType;
     }
 
     public IntegerType getIntegerType(int bitWidth) {
-        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
+        checkArgument(bitWidth > 0, "Non-positive integer bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
     }
 
@@ -118,8 +120,9 @@ public final class TypeFactory {
     }
 
     public IntegerType getArchType() {
-        return pointerDifferenceType;
+        return getIntegerType(64); // TODO ask about this
     }
+
 
     public IntegerType getByteType() {
         return getIntegerType(8);
@@ -136,6 +139,9 @@ public final class TypeFactory {
         if (type instanceof IntegerType integerType) {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
         }
+        if (type instanceof PointerType) {
+            return getMemorySizeInBytes(archType);
+        }
         if (type instanceof FloatType floatType) {
             return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
         }
@@ -147,8 +153,8 @@ public final class TypeFactory {
             return -1;
         }
         if (type instanceof AggregateType aType) {
-            List<TypeOffset> typeOffsets = aType.getFields();
-            if (aType.getFields().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
+            List<TypeOffset> typeOffsets = aType.getTypeOffsets();
+            if (aType.getTypeOffsets().stream().anyMatch(o -> !hasKnownSize(o.type()))) {
                 return -1;
             }
             if (typeOffsets.isEmpty()) {
@@ -165,14 +171,14 @@ public final class TypeFactory {
     }
 
     public int getAlignment(Type type) {
-        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType || type instanceof PointerType) {
             return getMemorySizeInBytes(type);
         }
         if (type instanceof ArrayType arrayType) {
             return getAlignment(arrayType.getElementType());
         }
         if (type instanceof AggregateType aType) {
-            return aType.getFields().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
+            return aType.getTypeOffsets().stream().map(o -> getAlignment(o.type())).max(Integer::compare).orElse(1);
         }
         throw new UnsupportedOperationException("Cannot compute memory layout of type " + type);
     }
@@ -211,7 +217,7 @@ public final class TypeFactory {
                 }
             }
         } else if (type instanceof AggregateType aggregateType) {
-            for (TypeOffset typeOffset : aggregateType.getFields()) {
+            for (TypeOffset typeOffset : aggregateType.getTypeOffsets()) {
                 final Map<Integer, Type> innerDecomposition = decomposeIntoPrimitives(typeOffset.type());
                 if (innerDecomposition == null) {
                     return null;
@@ -236,7 +242,7 @@ public final class TypeFactory {
             return aType.hasKnownNumElements() && isStaticType(aType.getElementType());
         }
         if (type instanceof AggregateType aType) {
-            return aType.getFields().stream().allMatch(o -> isStaticType(o.type()));
+            return aType.getTypeOffsets().stream().allMatch(o -> isStaticType(o.type()));
         }
         throw new UnsupportedOperationException("Cannot compute if type '" + type + "' is static");
     }
@@ -246,13 +252,13 @@ public final class TypeFactory {
             return true;
         }
         if (staticType instanceof AggregateType aStaticType && runtimeType instanceof AggregateType aRuntimeType) {
-            int size = aStaticType.getFields().size();
-            if (size != aRuntimeType.getFields().size()) {
+            int size = aStaticType.getTypeOffsets().size();
+            if (size != aRuntimeType.getTypeOffsets().size()) {
                 return false;
             }
             for (int i = 0; i < size; i++) {
-                TypeOffset staticTypeOffset = aStaticType.getFields().get(i);
-                TypeOffset runtimeTypeOffset = aRuntimeType.getFields().get(i);
+                TypeOffset staticTypeOffset = aStaticType.getTypeOffsets().get(i);
+                TypeOffset runtimeTypeOffset = aRuntimeType.getTypeOffsets().get(i);
                 if (staticTypeOffset.offset() != runtimeTypeOffset.offset()
                         || !isStaticTypeOf(staticTypeOffset.type(), runtimeTypeOffset.type())) {
                     return false;

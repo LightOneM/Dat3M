@@ -365,7 +365,7 @@ public class ProgramEncoder implements Encoder {
 
     private BooleanFormula encodeMemoryLayout(Memory memory) {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
-        final EncodingHelper helper = new EncodingHelper(context.getFormulaManager());
+        final EncodingHelper helper = new EncodingHelper(context.getFormulaManager(),context.getTupleFormulaManager());
         final List<BooleanFormula> enc = new ArrayList<>();
 
         // TODO: We could sort the objects to generate better encoding:
@@ -375,7 +375,7 @@ public class ProgramEncoder implements Encoder {
         final List<MemoryObject> memoryObjects = ImmutableList.copyOf(memory.getObjects());
         for (int i = 0; i < memoryObjects.size(); i++) {
             final MemoryObject cur = memoryObjects.get(i);
-            final Formula addr = context.address(cur);
+            final Formula addr = context.baseAddress(cur);
             final Formula size = context.size(cur);
             final Formula alignment;
 
@@ -404,7 +404,7 @@ public class ProgramEncoder implements Encoder {
                 // First object is placed at alignment
                 enc.add(helper.equals(addr, alignment));
             } else {
-                final Formula prevAddr = context.address(prev);
+                final Formula prevAddr = context.baseAddress(prev);
                 final Formula prevSize = context.size(prev);
                 final Formula nextAvailableAddr = helper.add(prevAddr, prevSize);
                 final Formula nextAlignedAddr = helper.add(nextAvailableAddr,

@@ -1,6 +1,22 @@
 package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
+import java.math.BigInteger;
+import static java.util.Arrays.asList;
+
+import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
+import com.dat3m.dartagnan.expression.integers.*;
+import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.NullLiteral;
+import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
+import com.dat3m.dartagnan.expression.type.PointerType;
+import com.dat3m.dartagnan.program.memory.Memory;
+import com.google.common.collect.ImmutableSet;
+import org.sosy_lab.java_smt.api.*;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
+
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.Type;
@@ -11,7 +27,6 @@ import com.dat3m.dartagnan.expression.aggregates.InsertExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolBinaryExpr;
 import com.dat3m.dartagnan.expression.booleans.BoolLiteral;
 import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.*;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -19,39 +34,37 @@ import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
-import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkState;
-import static java.util.Arrays.asList;
 
 class ExpressionEncoder implements ExpressionVisitor<Formula> {
-
     private static final TypeFactory types = TypeFactory.getInstance();
 
     private final EncodingContext context;
     private final FormulaManager formulaManager;
+    private final TupleFormulaManager tupleFormulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
+    private final BitvectorFormulaManager bitvectorFormulaManager;
     private final Event event;
+    // TODO bad structuring but works
+    private final EncodingHelper helper;
 
     ExpressionEncoder(EncodingContext context, Event event) {
         this.context = context;
         this.formulaManager = context.getFormulaManager();
+        this.tupleFormulaManager = context.getTupleFormulaManager();
         this.booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+        this.bitvectorFormulaManager = formulaManager.getBitvectorFormulaManager();
         this.event = event;
+        this.helper = new EncodingHelper(formulaManager, tupleFormulaManager);
     }
-
+    // TODO ?
     private IntegerFormulaManager integerFormulaManager() {
         return formulaManager.getIntegerFormulaManager();
     }
 
-    private BitvectorFormulaManager bitvectorFormulaManager() {
-        return formulaManager.getBitvectorFormulaManager();
-    }
 
     BooleanFormula encodeAsBoolean(Expression expression) {
         Formula formula = expression.accept(this);
@@ -59,9 +72,8 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             return bForm;
         }
         if (formula instanceof BitvectorFormula bvForm) {
-            BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
-            BitvectorFormula zero = bvmgr.makeBitvector(bvmgr.getLength(bvForm), 0);
-            return bvmgr.greaterThan(bvForm, zero, false);
+            BitvectorFormula zero = bitvectorFormulaManager.makeBitvector(bitvectorFormulaManager.getLength(bvForm), 0);
+            return bitvectorFormulaManager.greaterThan(bvForm, zero, false);
         }
         assert formula instanceof IntegerFormula;
         IntegerFormulaManager imgr = integerFormulaManager();
@@ -121,7 +133,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         final int bitWidth = iBin.getType().getBitWidth();
 
         if (lhs instanceof IntegerFormula i1 && rhs instanceof IntegerFormula i2) {
-            BitvectorFormulaManager bvmgr;
+            BitvectorFormulaManager bvmgr = bitvectorFormulaManager;
             IntegerFormulaManager imgr = integerFormulaManager();
             switch (iBin.getKind()) {
                 case ADD:
@@ -134,35 +146,35 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                 case UDIV:
                     return imgr.divide(i1, i2);
                 case AND:
-                    bvmgr = bitvectorFormulaManager();
+
                     return bvmgr.toIntegerFormula(
                             bvmgr.and(
                                     bvmgr.makeBitvector(bitWidth, i1),
                                     bvmgr.makeBitvector(bitWidth, i2)),
                             false);
                 case OR:
-                    bvmgr = bitvectorFormulaManager();
+
                     return bvmgr.toIntegerFormula(
                             bvmgr.or(
                                     bvmgr.makeBitvector(bitWidth, i1),
                                     bvmgr.makeBitvector(bitWidth, i2)),
                             false);
                 case XOR:
-                    bvmgr = bitvectorFormulaManager();
+
                     return bvmgr.toIntegerFormula(
                             bvmgr.xor(
                                     bvmgr.makeBitvector(bitWidth, i1),
                                     bvmgr.makeBitvector(bitWidth, i2)),
                             false);
                 case LSHIFT:
-                    bvmgr = bitvectorFormulaManager();
+
                     return bvmgr.toIntegerFormula(
                             bvmgr.shiftLeft(
                                     bvmgr.makeBitvector(bitWidth, i1),
                                     bvmgr.makeBitvector(bitWidth, i2)),
                             false);
                 case RSHIFT:
-                    bvmgr = bitvectorFormulaManager();
+
                     return bvmgr.toIntegerFormula(
                             bvmgr.shiftRight(
                                     bvmgr.makeBitvector(bitWidth, i1),
@@ -170,7 +182,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                                     false),
                             false);
                 case ARSHIFT:
-                    bvmgr = bitvectorFormulaManager();
+
                     return bvmgr.toIntegerFormula(
                             bvmgr.shiftRight(
                                     bvmgr.makeBitvector(bitWidth, i1),
@@ -189,7 +201,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     throw new UnsupportedOperationException("Encoding of IntBinaryOp operation " + iBin.getKind() + " not supported on integer formulas.");
             }
         } else if (lhs instanceof BitvectorFormula bv1 && rhs instanceof BitvectorFormula bv2) {
-            BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+            BitvectorFormulaManager bvmgr = bitvectorFormulaManager;
             return switch (iBin.getKind()) {
                 case ADD -> bvmgr.add(bv1, bv2);
                 case SUB -> bvmgr.subtract(bv1, bv2);
@@ -219,15 +231,14 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         }
 
         if (inner instanceof BitvectorFormula number) {
-            final BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
             final int targetBitWidth = expr.getTargetType().getBitWidth();
             final int sourceBitWidth = expr.getSourceType().getBitWidth();
-            assert (sourceBitWidth == bvmgr.getLength(number));
+            assert (sourceBitWidth == bitvectorFormulaManager.getLength(number));
 
             if (expr.isExtension()) {
-                return bvmgr.extend(number, targetBitWidth - sourceBitWidth, expr.preservesSign());
+                return bitvectorFormulaManager.extend(number, targetBitWidth - sourceBitWidth, expr.preservesSign());
             } else {
-                return bvmgr.extract(number, targetBitWidth - 1, 0);
+                return bitvectorFormulaManager.extract(number, targetBitWidth - 1, 0);
             }
         }
 
@@ -243,12 +254,12 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
                     return integerFormulaManager().negate(number);
                 }
                 if (inner instanceof BitvectorFormula number) {
-                    return bitvectorFormulaManager().negate(number);
+                    return bitvectorFormulaManager.negate(number);
                 }
             }
             case CTLZ -> {
                 if (inner instanceof BitvectorFormula bv) {
-                    BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                    BitvectorFormulaManager bvmgr = bitvectorFormulaManager;
                     // enc = extract(bv, 63, 63) == 1 ? 0 : (extract(bv, 62, 62) == 1 ? 1 : extract ... extract(bv, 0, 0) == 1 ? 63 : 64)
                     int bvLength = bvmgr.getLength(bv);
                     BitvectorFormula bv1 = bvmgr.makeBitvector(1, 1);
@@ -263,7 +274,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
             }
             case CTTZ -> {
                 if (inner instanceof BitvectorFormula bv) {
-                    BitvectorFormulaManager bvmgr = bitvectorFormulaManager();
+                    BitvectorFormulaManager bvmgr = bitvectorFormulaManager;
                     // enc = extract(bv, 0, 0) == 1 ? 0 : (extract(bv, 1, 1) == 1 ? 1 : extract ... extract(bv, 63, 63) == 1? 63 : 64)
                     int bvLength = bvmgr.getLength(bv);
                     BitvectorFormula bv1 = bvmgr.makeBitvector(1, 1);
@@ -331,6 +342,7 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         Type type = reg.getType();
         return context.makeVariable(name, type);
     }
+    // TODO visit pointer returns a tuple then encode
 
     @Override
     public Formula visitMemoryObject(MemoryObject memObj) {
@@ -342,5 +354,63 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
         int size = types.getMemorySizeInBits(val.getType());
         return context.lastValue(val.getMemoryObject(), val.getOffset(), size);
+    }
+
+//    @Override
+//    public Formula visitFinalMemoryValue(FinalMemoryValue val) {
+//        checkState(event == null, "Cannot evaluate final memory value of %s at event %s.", val, event);
+//        int size = types.getMemorySizeInBits(val.getType());
+//        return context.lastValue(val.getMemoryObject(), val.getOffset(), size);
+//    }
+
+    // TODO continue here
+    @Override
+    public Formula visitPtrCmpExpression(PtrCmpExpr expr) {
+        final Formula left = encode(expr.getLeft());
+        final Formula right = encode(expr.getRight());
+        return switch (expr.getKind())
+        {
+            case EQ -> context.equal(left, right);
+            case NEQ -> context.getBooleanFormulaManager().not(context.equal(left, right));
+        }; }
+
+    public Formula visitPtrAddOffsetExpression(PtrAddOffsetExpr expr) {
+        final Formula base_pointer = encode(expr.getBasePointerVal()); //(base,offset)
+        IntegerFormula added_offset = (IntegerFormula) encode(expr.getAddedOffset());// offset to be added
+        BitvectorFormula added_offset_bv = bitvectorFormulaManager.makeBitvector(types.getArchType().getBitWidth(),added_offset);
+        // TODO previous function break pointers with int values (int,int), to be added later
+        return helper.add(base_pointer,added_offset_bv);
+    }
+    @Override
+    public Formula visitPtrToIntCastExpression(PtrToIntCast expr) {
+        Formula encoded = encode(expr.getOperand());
+        return context.toInteger(encoded);
+    }
+    @Override
+    public Formula visitIntToPtrCastExpression(IntToPtrCast expr){
+        BitvectorFormulaManager bvfm = bitvectorFormulaManager;
+        BooleanFormulaManager bfm = booleanFormulaManager;
+        BitvectorFormula value =(BitvectorFormula) encode(expr.getOperand());
+        TupleFormula pointer = (TupleFormula) context.makeVariable("Int(" + value + ")ToPtrCast" ,TypeFactory.getInstance().getPointerType());
+        BooleanFormula result = bfm.makeTrue();
+        BooleanFormula atLeastOneTrue = bfm.makeFalse();
+        for (List<BitvectorFormula> obj : context.getObjBasesAndSizesList()) {
+            BooleanFormula located = bfm.and(bvfm.greaterOrEquals(value,obj.get(0),false),bvfm.lessThan(value,bvfm.add(obj.get(1),obj.get(0)),false));
+            BooleanFormula base_con = bvfm.equal((BitvectorFormula) pointer.elements.get(0),obj.get(0));
+            BooleanFormula offset_con = bvfm.equal((BitvectorFormula) pointer.elements.get(1),bvfm.subtract(value,obj.get(0)));
+            BooleanFormula enforce = bfm.equivalence(located, bfm.and(base_con, offset_con));
+            result = bfm.and(result,enforce);
+            atLeastOneTrue = bfm.or(located,atLeastOneTrue);
+        }
+        BooleanFormula base_con = bvfm.equal((BitvectorFormula)pointer.elements.get(0),bvfm.makeBitvector(context.getPtrBitWidth(), BigInteger.ZERO)); // this responsible for the 0 in (0,a)
+        BooleanFormula offset_con = bvfm.equal((BitvectorFormula)pointer.elements.get(1),value); // this responsible for the a in (0,a)
+        BooleanFormula ifNotLocated = bfm.equivalence(bfm.not(atLeastOneTrue),bfm.and(base_con, offset_con));
+        return bfm.and(result,ifNotLocated);
+    }
+    @Override
+    public Formula visitNullPointerLiteral(NullLiteral nullptr){
+       IntegerType inttype = types.getIntegerType(types.getMemorySizeInBits(nullptr.getType()));
+       Formula zero = context.makeLiteral(inttype,BigInteger.ZERO);
+        return tupleFormulaManager.makeTuple(List.of(zero,zero));
     }
 }

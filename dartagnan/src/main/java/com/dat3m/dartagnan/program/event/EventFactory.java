@@ -166,9 +166,16 @@ public class EventFactory {
         //TODO: We simplify here because virtual aliasing currently fails when pointer arithmetic is involved
         // meaning that <addr> and <addr + 0> are treated differently.
         final Expression address = offset == 0 ? base :
-                expressions.makeAdd(base, expressions.makeValue(offset, (IntegerType) base.getType()));
-        final Init init = new Init(base, offset, address);
+                expressions.makePtrAddOffset(base, expressions.makeValue(offset, types.getArchType())); //TODO make sure that this works it was (integertype) base.get(type)
+
+
+        return new Init(base, offset, address);
+    }
+
+    public static Init newC11Init(MemoryObject base, int offset) {
+        Init init = newInit(base, offset);
         init.addTags(base.getFeatureTags());
+        init.addTags(Tag.C11.NONATOMIC);
         return init;
     }
 
@@ -778,6 +785,15 @@ public class EventFactory {
             red.addTags(scope);
             return red;
         }
+
+        public static GenericVisibleEvent newAvDevice() {
+            return new GenericVisibleEvent("avdevice", Tag.Vulkan.AVDEVICE);
+        }
+    
+        public static GenericVisibleEvent newVisDevice() {
+            return new GenericVisibleEvent("visdevice", Tag.Vulkan.VISDEVICE);
+        }
+    
     }
 
     // =============================================================================================

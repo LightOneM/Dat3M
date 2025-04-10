@@ -51,7 +51,7 @@ public class FinalMemoryValue extends LeafExpressionBase<Type> {
     @Override
     public int hashCode() {
         return base.hashCode() + 31 * offset;
-    }
+    } // TODO what does 31 even mean?
 
     @Override
     public boolean equals(Object obj) {

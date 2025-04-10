@@ -2,20 +2,31 @@ package com.dat3m.dartagnan.encoding;
 
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import com.dat3m.dartagnan.encoding.formulas.TupleValue;
+import ap.parser.smtlib.FoldVisitor;
+import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
+import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
 import java.util.stream.IntStream;
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class EncodingHelper {
 
     private final FormulaManager fmgr;
+    private final TupleFormulaManager tfmgr;
 
-    public EncodingHelper(FormulaManager fmgr) {
+    public EncodingHelper(FormulaManager fmgr, TupleFormulaManager tfmgr) {
         this.fmgr = fmgr;
+        this.tfmgr = tfmgr;
     }
+//    public TupleFormulaManager getTupleFormulaManager() {
+//        return tupleFormulaManager;
+//    }
 
     public BooleanFormula equals(Formula left, Formula right) {
         if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
@@ -27,9 +38,34 @@ public class EncodingHelper {
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
             return fmgr.getBitvectorFormulaManager().equal(bvLeft, bvRight);
         }
-
-        throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);
+        // TODO more important additions here Needs revision
+        if (left instanceof TupleFormula tpLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+            IntegerFormulaManager ifm = fmgr.getIntegerFormulaManager();
+            Formula left_sum = tpLeft.elements.get(0);
+            for(int c = 1; tpLeft.elements.size() > c; c++ ) {
+                left_sum = ifm.add((NumeralFormula.IntegerFormula)left_sum , (NumeralFormula.IntegerFormula)tpLeft.elements.get(c));
+            }
+            return equals(left_sum, iRight);
+        }
+        if (left instanceof TupleFormula tpLeft && right instanceof BitvectorFormula iRight) {
+            BitvectorFormulaManager bvfm = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula left_sum = (BitvectorFormula) tpLeft.elements.get(0);
+            for(int c = 1; tpLeft.elements.size() > c; c++ ) {
+                left_sum = bvfm.add(left_sum , (BitvectorFormula) tpLeft.elements.get(c));
+            }
+            return equals(left_sum, iRight);
+        }// TODO ? saw an add function somewhere ?
+        if(left instanceof TupleFormula tfLeft && right instanceof TupleFormula tfRight) {
+            return tfmgr.equal(tfLeft,tfRight);
+        }
+        if(left instanceof BitvectorFormula tfLeft && right instanceof NumeralFormula.IntegerFormula tfRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula tfRight_bv = bvmgr.makeBitvector(64,tfRight);// TODO make 64 dynamic
+            return bvmgr.equal(tfLeft,tfRight_bv);
+        }
+        throw new UnsupportedOperationException("Mismatching types: <" + left + " " + left.getClass().getName() + "> and <" + right + " " +right.getClass().getName()+">");
     }
+    // TODO add pointer to equal?
 
     public BooleanFormula greaterThan(Formula left, Formula right, boolean signed) {
         if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {
@@ -69,6 +105,33 @@ public class EncodingHelper {
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
             return fmgr.getBitvectorFormulaManager().add(bvLeft, bvRight);
         }
+//        if (left instanceof TupleFormula tpLeft && right instanceof TupleFormula tpRight) {
+//            // We dont support pointer addition ?? does it happen? throw exceptions?
+//            //TODO the second part should not be a base pointer. to be enforced later on
+//            IntegerFormulaManager ifm = fmgr.getIntegerFormulaManager();
+//            Formula sum = tpLeft.elements.get(0);
+//            for(int c = 1; tpLeft.elements.size() > c; c++) {
+//                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpLeft.elements.get(c));
+//            }
+//            for(int c = 1; tpRight.elements.size() > c; c++) {
+//                sum = ifm.add((NumeralFormula.IntegerFormula)sum , (NumeralFormula.IntegerFormula)tpRight.elements.get(c));
+//            }
+//            return sum;
+//        }
+        if (left instanceof TupleFormula tpLeft && right instanceof NumeralFormula.IntegerFormula iRight) {
+            BitvectorFormulaManager bvfm = fmgr.getBitvectorFormulaManager();
+            Formula base = tpLeft.elements.get(0);
+            BitvectorFormula offset = (BitvectorFormula) tpLeft.elements.get(1);
+            BitvectorFormula addedValue = bvfm.makeBitvector(bvfm.getLength(offset),iRight);
+            offset = bvfm.add( offset, addedValue);
+            return tfmgr.makeTuple(List.of(base,offset));
+        }
+        if (left instanceof TupleFormula tpLeft && right instanceof BitvectorFormula iRight) {
+            BitvectorFormulaManager bvfm = fmgr.getBitvectorFormulaManager();
+            Formula base = tpLeft.elements.get(0);
+            BitvectorFormula new_offset = bvfm.add((BitvectorFormula) tpLeft.elements.get(1), iRight);
+            return tfmgr.makeTuple(List.of(base,new_offset));
+        }
 
         throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);
     }
@@ -81,8 +144,23 @@ public class EncodingHelper {
         if (left instanceof BitvectorFormula bvLeft && right instanceof BitvectorFormula bvRight) {
             final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
-            return fmgr.getBitvectorFormulaManager().subtract(bvLeft, bvRight);
+            return bvmgr.subtract(bvLeft, bvRight);
         }
+
+        if (left instanceof BitvectorFormula bvLeft && right instanceof NumeralFormula.IntegerFormula intRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula bvRight = bvmgr.makeBitvector(bvmgr.getLength(bvLeft), intRight);
+            return bvmgr.subtract(bvLeft, bvRight);
+        }
+
+        if (left instanceof NumeralFormula.IntegerFormula intLeft && right instanceof BitvectorFormula bvRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula bvLeft = bvmgr.makeBitvector(bvmgr.getLength(bvRight), intLeft);
+            return bvmgr.subtract(bvLeft, bvRight);
+        }
+
+
+
 
         throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);
     }
@@ -98,7 +176,18 @@ public class EncodingHelper {
         if (left instanceof BitvectorFormula bvLeft && right instanceof BitvectorFormula bvRight) {
             final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
             Preconditions.checkState(bvmgr.getLength(bvLeft) == bvmgr.getLength(bvRight));
-            return fmgr.getBitvectorFormulaManager().smodulo(bvLeft, bvRight);
+            return bvmgr.smodulo(bvLeft, bvRight);
+        }
+        if (left instanceof BitvectorFormula bvLeft && right instanceof NumeralFormula.IntegerFormula intRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula bvRight = bvmgr.makeBitvector(bvmgr.getLength(bvLeft),intRight);
+            return bvmgr.smodulo(bvLeft, bvRight);
+        }
+
+        if (left instanceof NumeralFormula.IntegerFormula intLeft && right instanceof BitvectorFormula bvRight) {
+            final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
+            BitvectorFormula bvLeft = bvmgr.makeBitvector(bvmgr.getLength(bvRight), intLeft);
+            return bvmgr.smodulo(bvLeft, bvRight);
         }
 
         throw new UnsupportedOperationException("Mismatching types: " + left + " and " + right);
