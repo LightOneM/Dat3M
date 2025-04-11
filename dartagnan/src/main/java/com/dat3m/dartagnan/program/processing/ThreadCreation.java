@@ -24,6 +24,7 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
+import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
@@ -138,13 +139,14 @@ public class ThreadCreation implements ProgramProcessor {
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
                         final IntLiteral tidExpr = expressions.makeValue(nextTid, archType);
                         final MemoryObject comAddress = program.getMemory().allocate(1);
+                        // final MemoryObject threadid = program.getMemory().allocate(1);
                         comAddress.setName("__com" + nextTid + "__" + targetFunction.getName());
                         comAddress.setInitialValue(0, expressions.makeZero(archType));
 
                         final List<Event> replacement = eventSequence(
                                 newReleaseStore(comAddress, expressions.makeTrue()),
                                 createEvent,
-                                newStore(pidResultAddress, tidExpr),
+                                newStore(pidResultAddress, tidExpr), //cast tid to pointer
                                 // TODO: Allow to return failure value (!= 0)
                                 newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
                         );
@@ -211,8 +213,7 @@ public class ThreadCreation implements ProgramProcessor {
                 final int tid = tidCandidate.getValueAsInt();
                 final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(tidCandidate);
 
-                if (tidExpr instanceof IntLiteral iConst && iConst.getValueAsInt() != tid) {
-                    // Little optimization if we join with a constant address
+                if (tidExpr instanceof IntLiteral iConst && iConst.getValueAsInt() != tid) { // csst back to int                  // Little optimization if we join with a constant address
                     continue;
                 }
 

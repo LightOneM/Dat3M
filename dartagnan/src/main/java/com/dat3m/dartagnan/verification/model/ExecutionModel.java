@@ -332,7 +332,7 @@ public class ExecutionModel {
         data.setWasExecuted(true);
         if (data.isMemoryEvent()) {
             // ===== Memory Events =====
-            Object addressObject = checkNotNull(model.evaluate(encodingContext.address((MemoryEvent) e)));
+            Object addressObject = checkNotNull(EncodingHelper.evaluate(encodingContext.address((MemoryEvent) e),model));
             BigInteger address = new BigInteger(addressObject.toString());
             data.setAccessedAddress(address);
             if (!addressReadsMap.containsKey(address)) {

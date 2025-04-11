@@ -377,6 +377,10 @@ public final class EncodingContext {
             BitvectorFormula one = bitvectorFormulaManager.makeBitvector(length, 1);
             return booleanFormulaManager.ifThenElse(f, one, zero);
         }
+        if (formula instanceof TupleFormula f) {
+           return toBitvector(bitvectorFormulaManager.add((BitvectorFormula)tupleFormulaManager.extract(f,0),(BitvectorFormula) tupleFormulaManager.extract(f,1)),length);
+
+        }
         throw new UnsupportedOperationException(String.format("Unknown type for toBitvector(%s,%s).", formula, length));
     }
 

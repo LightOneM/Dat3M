@@ -17,8 +17,8 @@ int main() {
     assert((int*)int_b == (int*)&b);
     assert((int*)int_c == (int*)&c);
 
-//    assert((void*)&a < (void*)&b);
-//    assert((void*)&b < (void*)&c);
+    assert((void*)&a < (void*)&b);
+    assert((void*)&b < (void*)&c);
 
     return 0;
 }

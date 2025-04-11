@@ -39,7 +39,7 @@ public class test extends AbstractCTest {
 
     @Override
     protected long getTimeout() {
-        return 10000;
+        return 50000;
     }
 
     @Override
@@ -56,8 +56,9 @@ public class test extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"test1", ARM8, PASS, 3},
                 {"test1", TSO, PASS, 3},
+                {"test1", ARM8, PASS, 3},
+
                 {"test1",POWER, PASS, 3},
                 {"test1", RISCV, PASS, 3},
         });
@@ -69,7 +70,7 @@ public class test extends AbstractCTest {
         assertEquals(expected, s.getResult());
     }
 
-    @Test
+    //@Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());

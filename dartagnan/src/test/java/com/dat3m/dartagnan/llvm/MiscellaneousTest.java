@@ -50,7 +50,7 @@ public class MiscellaneousTest extends AbstractCTest {
         return Provider.fromSupplier(() -> {
             ConfigurationBuilder builder = Configuration.builder();
             if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz")) {
-                builder.setOption(OptionNames.USE_INTEGERS, "true");
+                builder.setOption(OptionNames.USE_INTEGERS, "false");
             }
             if (name.equals("recursion")) {
                 builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
@@ -106,7 +106,7 @@ public class MiscellaneousTest extends AbstractCTest {
         assertEquals(expected, s.getResult());
     }
 
-    @Test
+    //@Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());

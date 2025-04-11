@@ -376,11 +376,10 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         }; }
 
     public Formula visitPtrAddOffsetExpression(PtrAddOffsetExpr expr) {
-        final Formula base_pointer = encode(expr.getBasePointerVal()); //(base,offset)
-        IntegerFormula added_offset = (IntegerFormula) encode(expr.getAddedOffset());// offset to be added
-        BitvectorFormula added_offset_bv = bitvectorFormulaManager.makeBitvector(types.getArchType().getBitWidth(),added_offset);
-        // TODO previous function break pointers with int values (int,int), to be added later
-        return helper.add(base_pointer,added_offset_bv);
+        final TupleFormula base_pointer =(TupleFormula) encode(expr.getBasePointerVal()); //(base,offset)
+        BitvectorFormula added_offset = (BitvectorFormula) encode(expr.getAddedOffset());// offset to be added
+        BitvectorFormula new_offset = bitvectorFormulaManager.add((BitvectorFormula) tupleFormulaManager.extract(base_pointer,1),added_offset);
+        return tupleFormulaManager.insert(base_pointer,new_offset,List.of(1));
     }
     @Override
     public Formula visitPtrToIntCastExpression(PtrToIntCast expr) {
