@@ -465,7 +465,7 @@ public class VisitorSpirvOpenCLTest {
 
     private void doTestSpirvControlBarrier(Set<String> spvTags, Set<String> expectedTags) {
         // given
-        ControlBarrier e = EventFactory.newControlBarrier("cbar", "test");
+        ControlBarrier e = EventFactory.newControlBarrier("cbar", "ptr");
         e.addTags(Tag.Spirv.CONTROL);
         if (!spvTags.isEmpty()) {
             e.addTags(spvTags);

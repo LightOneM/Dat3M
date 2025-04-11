@@ -128,7 +128,7 @@ public class AnalysisTest {
     @Test
     public void reachingDefinitionSupportsLoops() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        b.newFunction("test", 0, types.getFunctionType(types.getArchType(), List.of()), List.of());
+        b.newFunction("ptr", 0, types.getFunctionType(types.getArchType(), List.of()), List.of());
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");

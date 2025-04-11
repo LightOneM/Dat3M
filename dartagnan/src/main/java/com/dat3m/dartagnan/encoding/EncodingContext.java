@@ -296,6 +296,9 @@ public final class EncodingContext {
     }
 
     public BooleanFormula equal(Formula left, Formula right, ConversionMode cMode) {
+        if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
+            return tupleFormulaManager.equal(l, r);
+        }
         if (cMode == ConversionMode.LEFT_TO_RIGHT) {
             return equal(right, left, ConversionMode.RIGHT_TO_LEFT);
         } else if (cMode == ConversionMode.NO && !new EncodingHelper(formulaManager,tupleFormulaManager).hasSameType(left, right)) {
@@ -561,11 +564,17 @@ public final class EncodingContext {
             }
         }
         if (type instanceof PointerType) {
-            final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrBase" + name);
-            final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrOffset" + name);
+            final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrBase" + "'" + name + "'");
+            final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrOffset" + "'" + name + "'");
             // TODO recursively?
             return tupleFormulaManager.makeTuple(List.of(base, offset));
         }
         throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
+    }
+    TupleFormula makePointerVariable(String name) {
+        final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrBase" + "'" + name + "'");
+        final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrOffset" + "'" + name + "'");
+        // TODO recursively?
+        return tupleFormulaManager.makeTuple(List.of(base, offset));
     }
 }

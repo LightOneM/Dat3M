@@ -21,7 +21,7 @@ public final class PtrCmpExpr extends BinaryExpressionBase<BooleanType, PtrCmpOp
 
     @Override
     public String toString() {
-        return left.toString() + " P{"+ kind.toString() + "} " + right.toString();
+        return left.toString() + " P{ "+ kind.toString() + "} " + right.toString();
     }
 
 

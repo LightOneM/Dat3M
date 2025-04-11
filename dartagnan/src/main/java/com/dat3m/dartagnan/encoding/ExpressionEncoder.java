@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
+import com.dat3m.dartagnan.encoding.formulas.PointerFormula;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import java.math.BigInteger;
 import static java.util.Arrays.asList;
@@ -383,34 +384,82 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
     }
     @Override
     public Formula visitPtrToIntCastExpression(PtrToIntCast expr) {
-        Formula encoded = encode(expr.getOperand());
-        return context.toInteger(encoded);
+        TupleFormula encoded =(TupleFormula) encode(expr.getOperand());
+        BitvectorFormula base =(BitvectorFormula) tupleFormulaManager.extract(encoded,0);
+        BitvectorFormula offset =(BitvectorFormula) tupleFormulaManager.extract(encoded,1);
+        return bitvectorFormulaManager.add(base,offset);
     }
+//    TODO make this return a tuple if possible
+//    @Override
+//    public Formula visitIntToPtrCastExpression(IntToPtrCast expr){
+//        BitvectorFormulaManager bvfm = bitvectorFormulaManager;
+//        BooleanFormulaManager bfm = booleanFormulaManager;
+//        IntegerFormula encoded = (IntegerFormula) encode(expr.getOperand());
+//        BitvectorFormula value = bvfm.makeBitvector(64,encoded);
+//        TupleFormula pointer =  context.makePointerVariable("Int(" + value.hashCode() + ")ToPtrCast" );
+//        BooleanFormula result = bfm.makeTrue();
+//        BooleanFormula atLeastOneTrue = bfm.makeFalse();
+//        for (List<BitvectorFormula> obj : context.getObjBasesAndSizesList()) {
+//            BooleanFormula located = bfm.and(bvfm.greaterOrEquals(value,obj.get(0),false),bvfm.lessThan(value,bvfm.add(obj.get(1),obj.get(0)),false));
+//            BooleanFormula base_con = bvfm.equal((BitvectorFormula) pointer.elements.get(0),obj.get(0));
+//            BooleanFormula offset_con = bvfm.equal( (BitvectorFormula)pointer.elements.get(1),bvfm.subtract(value,obj.get(0)));
+//            BooleanFormula enforce = bfm.equivalence(located, bfm.and(base_con, offset_con));
+//            result = bfm.and(result,enforce);
+//            atLeastOneTrue = bfm.or(located,atLeastOneTrue);
+//        }
+//        BooleanFormula base_con = bvfm.equal((BitvectorFormula)pointer.elements.get(0),bvfm.makeBitvector(context.getPtrBitWidth(), BigInteger.ZERO)); // this responsible for the 0 in (0,a)
+//        BooleanFormula offset_con = bvfm.equal((BitvectorFormula)pointer.elements.get(1),value); // this responsible for the a in (0,a)
+//        BooleanFormula ifNotLocated = bfm.equivalence(bfm.not(atLeastOneTrue),bfm.and(base_con, offset_con));
+//        return bfm.and(result,ifNotLocated);
+//    }
+//
     @Override
     public Formula visitIntToPtrCastExpression(IntToPtrCast expr){
         BitvectorFormulaManager bvfm = bitvectorFormulaManager;
         BooleanFormulaManager bfm = booleanFormulaManager;
-        BitvectorFormula value =(BitvectorFormula) encode(expr.getOperand());
-        TupleFormula pointer = (TupleFormula) context.makeVariable("Int(" + value + ")ToPtrCast" ,TypeFactory.getInstance().getPointerType());
-        BooleanFormula result = bfm.makeTrue();
-        BooleanFormula atLeastOneTrue = bfm.makeFalse();
-        for (List<BitvectorFormula> obj : context.getObjBasesAndSizesList()) {
-            BooleanFormula located = bfm.and(bvfm.greaterOrEquals(value,obj.get(0),false),bvfm.lessThan(value,bvfm.add(obj.get(1),obj.get(0)),false));
-            BooleanFormula base_con = bvfm.equal((BitvectorFormula) pointer.elements.get(0),obj.get(0));
-            BooleanFormula offset_con = bvfm.equal((BitvectorFormula) pointer.elements.get(1),bvfm.subtract(value,obj.get(0)));
-            BooleanFormula enforce = bfm.equivalence(located, bfm.and(base_con, offset_con));
-            result = bfm.and(result,enforce);
-            atLeastOneTrue = bfm.or(located,atLeastOneTrue);
+        BitvectorFormula int_addr = (BitvectorFormula) encode(expr.getOperand());
+        BitvectorFormula baseE = bvfm.makeBitvector(64,0);
+        BitvectorFormula offsetE = int_addr;
+        for (MemoryObject obj : context.getTask().getProgram().getMemory().getObjects()) {
+            BitvectorFormula object_base =(BitvectorFormula) context.baseAddress(obj);
+            BitvectorFormula object_size =(BitvectorFormula) context.size(obj);
+            BooleanFormula located = bfm.and(bvfm.greaterOrEquals(int_addr,object_base,false),bvfm.lessThan(int_addr,bvfm.add(object_base,object_size),false));
+
+            baseE = bfm.ifThenElse(located,object_base,baseE);
+            offsetE = bfm.ifThenElse(located,bvfm.subtract(int_addr, object_base),offsetE);
+
         }
-        BooleanFormula base_con = bvfm.equal((BitvectorFormula)pointer.elements.get(0),bvfm.makeBitvector(context.getPtrBitWidth(), BigInteger.ZERO)); // this responsible for the 0 in (0,a)
-        BooleanFormula offset_con = bvfm.equal((BitvectorFormula)pointer.elements.get(1),value); // this responsible for the a in (0,a)
-        BooleanFormula ifNotLocated = bfm.equivalence(bfm.not(atLeastOneTrue),bfm.and(base_con, offset_con));
-        return bfm.and(result,ifNotLocated);
+        return tupleFormulaManager.makeTuple(List.of(baseE,offsetE));
     }
+
+
+//    public Formula visitIntToPtrCastExpression(IntToPtrCast expr){
+//        BitvectorFormulaManager bvfm = bitvectorFormulaManager;
+//        BooleanFormulaManager bfm = booleanFormulaManager;
+//        BitvectorFormula value =(BitvectorFormula) encode(expr.getOperand());
+//        TupleFormula pointer = (TupleFormula) context.makeVariable("Int(" + value + ")ToPtrCast" ,TypeFactory.getInstance().getPointerType());
+//        BooleanFormula result = bfm.makeTrue();
+//        BooleanFormula atLeastOneTrue = bfm.makeFalse();
+//        for (List<BitvectorFormula> obj : context.getObjBasesAndSizesList()) {
+//            BooleanFormula located = bfm.and(bvfm.greaterOrEquals(value,obj.get(0),false),bvfm.lessThan(value,bvfm.add(obj.get(1),obj.get(0)),false));
+//            BooleanFormula base_con = bvfm.equal((BitvectorFormula) pointer.elements.get(0),obj.get(0));
+//            BooleanFormula offset_con = bvfm.equal((BitvectorFormula) pointer.elements.get(1),bvfm.subtract(value,obj.get(0)));
+//            BooleanFormula enforce = bfm.equivalence(located, bfm.and(base_con, offset_con));
+//            result = bfm.and(result,enforce);
+//            atLeastOneTrue = bfm.or(located,atLeastOneTrue);
+//        }
+//        BooleanFormula base_con = bvfm.equal((BitvectorFormula)pointer.elements.get(0),bvfm.makeBitvector(context.getPtrBitWidth(), BigInteger.ZERO)); // this responsible for the 0 in (0,a)
+//        BooleanFormula offset_con = bvfm.equal((BitvectorFormula)pointer.elements.get(1),value); // this responsible for the a in (0,a)
+//        BooleanFormula ifNotLocated = bfm.equivalence(bfm.not(atLeastOneTrue),bfm.and(base_con, offset_con));
+//        return bfm.and(result,ifNotLocated);
+//    }
+
+
+
+
     @Override
     public Formula visitNullPointerLiteral(NullLiteral nullptr){
-       IntegerType inttype = types.getIntegerType(types.getMemorySizeInBits(nullptr.getType()));
-       Formula zero = context.makeLiteral(inttype,BigInteger.ZERO);
+        BitvectorFormula zero = context.getBitvectorFormulaManager().makeBitvector(64,BigInteger.ZERO);
         return tupleFormulaManager.makeTuple(List.of(zero,zero));
     }
 }

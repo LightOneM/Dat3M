@@ -30,7 +30,7 @@ public class ProgramBuilderTest {
     @Test
     public void testAddEventBeforeBlock() {
         FunctionType type = types.getFunctionType(types.getVoidType(), List.of());
-        builder.startCurrentFunction(new Function("test", type, List.of(), 0, null));
+        builder.startCurrentFunction(new Function("ptr", type, List.of(), 0, null));
         testAddChildError("Attempt to add an event outside a control flow block");
     }
 

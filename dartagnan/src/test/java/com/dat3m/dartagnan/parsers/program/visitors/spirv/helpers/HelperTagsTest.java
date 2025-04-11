@@ -5,7 +5,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
-import com.dat3m.dartagnan.parsers.program.visitors.spirv.helpers.HelperTags;
 import org.junit.Test;
 
 import java.util.List;
@@ -36,7 +35,7 @@ public class HelperTagsTest {
         Expression expr = expressions.makeValue(input, archType);
 
         // when
-        String scope = HelperTags.parseScope("test", expr);
+        String scope = HelperTags.parseScope("ptr", expr);
 
         // then
         assertEquals(expected, scope);
@@ -54,7 +53,7 @@ public class HelperTagsTest {
 
         try {
             // when
-            HelperTags.parseScope("test", expr);
+            HelperTags.parseScope("ptr", expr);
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
@@ -96,7 +95,7 @@ public class HelperTagsTest {
         Expression expr = expressions.makeValue(input, archType);
 
         // when
-        Set<String> tags = HelperTags.parseMemorySemanticsTags("test", expr);
+        Set<String> tags = HelperTags.parseMemorySemanticsTags("ptr", expr);
 
         // then
         assertEquals(expected, tags);
@@ -117,7 +116,7 @@ public class HelperTagsTest {
 
         try {
             // when
-            HelperTags.parseMemorySemanticsTags("test", expr);
+            HelperTags.parseMemorySemanticsTags("ptr", expr);
             fail("Should throw exception");
         } catch (ParsingException e) {
             // then
