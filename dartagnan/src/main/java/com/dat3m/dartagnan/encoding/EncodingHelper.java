@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.encoding.formulas.TupleValue;
 import ap.parser.smtlib.FoldVisitor;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
@@ -60,12 +61,11 @@ public class EncodingHelper {
         }
         if(left instanceof BitvectorFormula tfLeft && right instanceof NumeralFormula.IntegerFormula tfRight) {
             final BitvectorFormulaManager bvmgr = fmgr.getBitvectorFormulaManager();
-            BitvectorFormula tfRight_bv = bvmgr.makeBitvector(64,tfRight);// TODO make 64 dynamic
+            BitvectorFormula tfRight_bv = bvmgr.makeBitvector(TypeFactory.getInstance().getArchType().getBitWidth(),tfRight);
             return bvmgr.equal(tfLeft,tfRight_bv);
         }
         throw new UnsupportedOperationException("Mismatching types: <" + left + " " + left.getClass().getName() + "> and <" + right + " " +right.getClass().getName()+">");
     }
-    // TODO add pointer to equal?
 
     public BooleanFormula greaterThan(Formula left, Formula right, boolean signed) {
         if (left instanceof IntegerFormula iLeft && right instanceof IntegerFormula iRight) {

@@ -19,3 +19,6 @@ mvn -Dmaven.test.skip=true install
 
     
 
+6.disable all optimisations
+7.fix witness
+8.

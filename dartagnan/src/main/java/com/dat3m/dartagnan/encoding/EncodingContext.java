@@ -20,9 +20,6 @@ import org.sosy_lab.java_smt.api.FormulaManager;
 import org.sosy_lab.java_smt.api.IntegerFormulaManager;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
-import static com.dat3m.dartagnan.configuration.OptionNames.IDL_TO_SAT;
-import static com.dat3m.dartagnan.configuration.OptionNames.MERGE_CF_VARS;
-import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
 import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
@@ -43,8 +40,11 @@ import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
 import static com.dat3m.dartagnan.program.event.Tag.INIT;
 import static com.dat3m.dartagnan.program.event.Tag.WRITE;
+
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.program.event.core.Load;
 import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
@@ -57,6 +57,7 @@ import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -78,7 +79,7 @@ public final class EncodingContext {
     private final int ptrBitWidth = TypeFactory.getInstance().getArchType().getBitWidth();
 
     @Option(
-            name=IDL_TO_SAT,
+            name = IDL_TO_SAT,
             description = "Use SAT-based encoding for totality and acyclicity.",
             secure = true)
     boolean useSATEncoding = false;
@@ -92,6 +93,11 @@ public final class EncodingContext {
             description = "Data is encoded with mathematical integers instead of bitvectors.  Default: false.",
             secure = true)
     boolean useIntegers = false;
+
+    @Option(name = USE_BVPOINTERS,
+            description = "Pointers are encoded with bitvectors instead of proper pointer types.  Default: false.",
+            secure = true)
+    boolean useBVPointers = false;
 
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
@@ -130,14 +136,15 @@ public final class EncodingContext {
         }
         return context;
     }
-    public List<List<BitvectorFormula>> getObjBasesAndSizesList(){
+
+    public List<List<BitvectorFormula>> getObjBasesAndSizesList() {
 
         List<List<BitvectorFormula>> result = new ArrayList<>();
         for (MemoryObject memobj : objBases.keySet()) {
             result.add(List.of(
-                    toBitvector(objBases.get(memobj),ptrBitWidth),
-                    toBitvector(objSize.get(memobj),ptrBitWidth)
-            )
+                            toBitvector(objBases.get(memobj), ptrBitWidth),
+                            toBitvector(objSize.get(memobj), ptrBitWidth)
+                    )
             );
         }
         return result;
@@ -167,11 +174,12 @@ public final class EncodingContext {
     public TupleFormulaManager getTupleFormulaManager() {
         return tupleFormulaManager;
     }
+
     public BitvectorFormulaManager getBitvectorFormulaManager() {
         return bitvectorFormulaManager;
     }
 
-    public int getPtrBitWidth(){
+    public int getPtrBitWidth() {
         return ptrBitWidth;
     }
 
@@ -256,12 +264,10 @@ public final class EncodingContext {
     /**
      * Simple formula proposing the execution of two events.
      * Does not test for mutual exclusion.
-     * @param first
-     * Some event of a program to be encoded.
-     * @param second
-     * Another event of the same program.
-     * @return
-     * Proposition that both {@code first} and {@code second} are included in the modelled execution.
+     *
+     * @param first  Some event of a program to be encoded.
+     * @param second Another event of the same program.
+     * @return Proposition that both {@code first} and {@code second} are included in the modelled execution.
      */
     public BooleanFormula execution(Event first, Event second) {
         boolean b = first.getGlobalId() < second.getGlobalId();
@@ -296,13 +302,13 @@ public final class EncodingContext {
     }
 
     public BooleanFormula equal(Formula left, Formula right, ConversionMode cMode) {
-        if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
-            return tupleFormulaManager.equal(l, r);
-        }
+//        if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
+//            return tupleFormulaManager.equal(l, r);
+//        }
         if (cMode == ConversionMode.LEFT_TO_RIGHT) {
             return equal(right, left, ConversionMode.RIGHT_TO_LEFT);
-        } else if (cMode == ConversionMode.NO && !new EncodingHelper(formulaManager,tupleFormulaManager).hasSameType(left, right)) {
-            final String error = String.format("Mismatching formula types: %s(%s) and %s(%s)", left,left.getClass() , right,right.getClass());
+        } else if (cMode == ConversionMode.NO && !new EncodingHelper(formulaManager, tupleFormulaManager).hasSameType(left, right)) {
+            final String error = String.format("Mismatching formula types: %s(%s) and %s(%s)", left, left.getClass(), right, right.getClass());
             throw new IllegalArgumentException(error);
         }
 
@@ -340,8 +346,8 @@ public final class EncodingContext {
         if (formula instanceof TupleFormula f) {
             IntegerFormulaManager ifm = formulaManager.getIntegerFormulaManager();
             IntegerFormula sum = toInteger(f.elements.get(0));
-            for(int c = 1; f.elements.size() > c; c++ ) {
-                sum = ifm.add(sum , toInteger(f.elements.get(c)));
+            for (int c = 1; f.elements.size() > c; c++) {
+                sum = ifm.add(sum, toInteger(f.elements.get(c)));
             }
             return sum;
         }
@@ -378,7 +384,7 @@ public final class EncodingContext {
             return booleanFormulaManager.ifThenElse(f, one, zero);
         }
         if (formula instanceof TupleFormula f) {
-           return toBitvector(bitvectorFormulaManager.add((BitvectorFormula)tupleFormulaManager.extract(f,0),(BitvectorFormula) tupleFormulaManager.extract(f,1)),length);
+            return toBitvector(bitvectorFormulaManager.add((BitvectorFormula) tupleFormulaManager.extract(f, 0), (BitvectorFormula) tupleFormulaManager.extract(f, 1)), length);
 
         }
         throw new UnsupportedOperationException(String.format("Unknown type for toBitvector(%s,%s).", formula, length));
@@ -397,7 +403,7 @@ public final class EncodingContext {
         }
         if (formula instanceof TupleFormula tpformula) {
             BooleanFormula result = booleanFormulaManager.makeTrue();
-            for(Formula element : tpformula.elements) {
+            for (Formula element : tpformula.elements) {
                 result = booleanFormulaManager.and(equalZero(element), result);
             }
             return result;
@@ -413,11 +419,20 @@ public final class EncodingContext {
         return addresses.get(event);
     }
 
-    public Formula address(MemoryObject memoryObject) { return tupleFormulaManager.makeTuple(List.of(objBases.get(memoryObject), bitvectorFormulaManager.makeBitvector(TypeFactory.getInstance().getArchType().getBitWidth(),BigInteger.ZERO))); }
+    public Formula address(MemoryObject memoryObject) {
+        if (useBVPointers){
+            return toBitvector(objBases.get(memoryObject),TypeFactory.getInstance().getArchType().getBitWidth());
+        }
+        return tupleFormulaManager.makeTuple(List.of(objBases.get(memoryObject), bitvectorFormulaManager.makeBitvector(TypeFactory.getInstance().getArchType().getBitWidth(), BigInteger.ZERO)));
+    }
 
-    public Formula size(MemoryObject memoryObject) { return objSize.get(memoryObject); }
+    public Formula size(MemoryObject memoryObject) {
+        return objSize.get(memoryObject);
+    }
 
-    public  Formula baseAddress(MemoryObject memoryObject) {return objBases.get(memoryObject); }
+    public Formula baseAddress(MemoryObject memoryObject) {
+        return objBases.get(memoryObject);
+    }
 
     public Formula value(MemoryEvent event) {
         return values.get(event);
@@ -511,7 +526,7 @@ public final class EncodingContext {
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
             Type archType = TypeFactory.getInstance().getArchType();
             // TODO this should be changed to bitvector???
-            objBases.put(memoryObject, bitvectorFormulaManager.makeVariable(ptrBitWidth,String.format("baseofof(%s)", memoryObject)));
+            objBases.put(memoryObject, bitvectorFormulaManager.makeVariable(ptrBitWidth, String.format("baseofof(%s)", memoryObject)));
             objSize.put(memoryObject, bitvectorFormulaManager.makeVariable(ptrBitWidth, String.format("sizeof(%s)", memoryObject)));
         }
 
@@ -568,17 +583,20 @@ public final class EncodingContext {
             }
         }
         if (type instanceof PointerType) {
-            final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrBase" + "'" + name + "'");
-            final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrOffset" + "'" + name + "'");
-            // TODO recursively?
+            if (useBVPointers) {
+                final BitvectorFormula pointer = bitvectorFormulaManager.makeVariable(ptrBitWidth, "Pointer" + "'" + name + "'");
+                return pointer;
+            }
+            final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth, "PtrBase" + "'" + name + "'");
+            final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth, "PtrOffset" + "'" + name + "'");
             return tupleFormulaManager.makeTuple(List.of(base, offset));
         }
         throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
     }
-    TupleFormula makePointerVariable(String name) {
-        final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrBase" + "'" + name + "'");
-        final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrOffset" + "'" + name + "'");
-        // TODO recursively?
-        return tupleFormulaManager.makeTuple(List.of(base, offset));
-    }
+
+//    PointerFormula makePointerVariable(String name) {
+//        final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrBase" + "'" + name + "'");
+//        final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrOffset" + "'" + name + "'");
+//        return tupleFormulaManager.makeTuple(List.of(base, offset));
+//    }
 }

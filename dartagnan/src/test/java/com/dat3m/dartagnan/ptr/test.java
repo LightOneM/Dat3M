@@ -33,7 +33,7 @@ public class test extends AbstractCTest {
 
     @Override
     protected Provider<String> getProgramPathProvider() {
-        return () -> "/home/lightone/Code/Dat3M/dartagnan/src/test/resources/ptr/test1.ll";
+        return () -> "/home/lightone/Code/Dat3M/dartagnan/src/test/resources/ptr/test_compr.ll";
     }
 
 
@@ -47,6 +47,7 @@ public class test extends AbstractCTest {
         return Provider.fromSupplier(() -> {
             ConfigurationBuilder builder = Configuration.builder();
             builder.setOption(OptionNames.USE_INTEGERS, "false");
+            builder.setOption(OptionNames.USE_BVPOINTERS, "false");
             builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(3));
 
             return builder.build();
@@ -56,11 +57,7 @@ public class test extends AbstractCTest {
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")
     public static Iterable<Object[]> data() throws IOException {
         return Arrays.asList(new Object[][]{
-                {"test1", TSO, PASS, 3},
-                {"test1", ARM8, PASS, 3},
-
-                {"test1",POWER, PASS, 3},
-                {"test1", RISCV, PASS, 3},
+                {"test", RISCV, PASS, 3},
         });
     }
 

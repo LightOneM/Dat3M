@@ -23,13 +23,13 @@ public final class PtrAddOffsetExpr extends ExpressionBase<PointerType> {
     final ExpressionKind kind = ExpressionKind.Other.PTR_OFFSET;
     private static final TypeFactory types = TypeFactory.getInstance();
 
-    public PtrAddOffsetExpr(Expression base, Expression added_offset) {
-        super((PointerType) base.getType());
+    public PtrAddOffsetExpr(Expression value, Expression added_offset) {
+        super((PointerType) value.getType());
         // base is forced to be a ptr because we assume offset + ptr does not exist in llvm.
         ExpressionHelper.checkExpectedType(added_offset, IntegerType.class);
-        ExpressionHelper.checkExpectedType(base, PointerType.class);
+        ExpressionHelper.checkExpectedType(value, PointerType.class);
         Preconditions.checkArgument(added_offset.getType().equals(types.getArchType()),"Pointer offset addition of integer with non archType size");
-        this.base_pointer = base;
+        this.base_pointer = value;
         this.added_offset = added_offset;
     }
 
@@ -61,5 +61,5 @@ public final class PtrAddOffsetExpr extends ExpressionBase<PointerType> {
                 && added_offset.equals(expr.added_offset));
     }
     @Override
-    public String toString() {return base_pointer.toString() + " P{+} " + added_offset.toString();}
+    public String toString() {return base_pointer.toString() + " P{+offset} " + added_offset.toString();}
 }
