@@ -298,6 +298,13 @@ class ExpressionEncoder implements ExpressionVisitor<Formula> {
         BooleanFormula guard = encodeAsBoolean(iteExpr.getCondition());
         Formula tBranch = encode(iteExpr.getTrueCase());
         Formula fBranch = encode(iteExpr.getFalseCase());
+        if (fBranch instanceof TupleFormula & tBranch instanceof TupleFormula) {
+            List<Formula> lst = new ArrayList<>(List.of());
+            for (int i = 0; i < ((TupleFormula) tBranch).getElements().size(); i++) {
+                lst.add(booleanFormulaManager.ifThenElse(guard, ((TupleFormula) tBranch).getElements().get(i), ((TupleFormula) fBranch).getElements().get(i)));
+            }
+            return tupleFormulaManager.makeTuple(lst);
+        }
         return booleanFormulaManager.ifThenElse(guard, tBranch, fBranch);
     }
 
