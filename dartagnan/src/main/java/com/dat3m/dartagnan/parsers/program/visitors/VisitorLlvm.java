@@ -1000,22 +1000,22 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitTruncExpr(TruncExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), false);
+        return intCastExpression(ctx.typeConst(), ctx.type(), false);
     }
 
     @Override
     public Expression visitZExtExpr(ZExtExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), false);
+        return intCastExpression(ctx.typeConst(), ctx.type(), false);
     }
 
     @Override
     public Expression visitSExtExpr(SExtExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), true);
+        return intCastExpression(ctx.typeConst(), ctx.type(), true);
     }
 
     @Override
     public Expression visitPtrToIntExpr(PtrToIntExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), true);
+        return intCastExpression(ctx.typeConst(), ctx.type(), true);
     }
 
     @Override
@@ -1025,12 +1025,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitBitCastExpr(BitCastExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), true);
+        final Type targetType = parseType(ctx.type());
+        if(targetType instanceof IntegerType){return intCastExpression(ctx.typeConst(), ctx.type(), true);}
+        if(targetType instanceof PointerType){return ptrCastExpression(ctx.typeConst(), ctx.type());}
+        throw new ParsingException("BitCast to unsupported type");
     }
 
     @Override
     public Expression visitAddrSpaceCastExpr(AddrSpaceCastExprContext ctx) {
-        return castExpression(ctx.typeConst(), ctx.type(), true);
+        return intCastExpression(ctx.typeConst(), ctx.type(), true);
     }
 
     @Override
@@ -1077,7 +1080,7 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         checkSupport(targetType instanceof PointerType, "Non-type type %s.", target);
         return expressions.makePtrCast(operandExpression, (PointerType) targetType);
     }
-    private Expression castExpression(TypeConstContext operand, TypeContext target, boolean signed) {
+    private Expression intCastExpression(TypeConstContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeConst(operand);
         final Type targetType = parseType(target);
         checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);

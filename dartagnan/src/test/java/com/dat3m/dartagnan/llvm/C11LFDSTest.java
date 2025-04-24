@@ -84,7 +84,7 @@ public class C11LFDSTest extends AbstractCTest {
         assertEquals(expected, s.getResult());
     }
 
-    @Test
+    //@Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());

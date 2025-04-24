@@ -45,7 +45,7 @@ public class test_cast extends AbstractCTest {
         return Provider.fromSupplier(() -> {
             ConfigurationBuilder builder = Configuration.builder();
             builder.setOption(OptionNames.USE_INTEGERS, "false");
-            builder.setOption(OptionNames.USE_BVPOINTERS, "false");
+            builder.setOption(OptionNames.USE_BVPOINTERS, "true");
             builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(3));
 
             return builder.build();

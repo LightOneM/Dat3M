@@ -213,7 +213,6 @@ public final class ExpressionFactory {
 
     public Expression makeIntegerCast(Expression operand, IntegerType targetType, boolean signed) {
         final Type sourceType = operand.getType();
-
         if (sourceType instanceof BooleanType) {
             return makeITE(operand, makeOne(targetType), makeZero(targetType));
         } else if (sourceType instanceof IntegerType) {
