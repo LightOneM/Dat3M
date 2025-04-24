@@ -10,9 +10,12 @@ int main() {
     intptr_t int_b = (intptr_t)&b;
     intptr_t int_c = (intptr_t)&c;
 
-    assert(!(int*)int_a +1 == (int*)&a);
-    assert(!(int*)int_b -1 == (int*)&b);
-    assert((int*)int_c == (int*)&c);
+    assert((int*)int_a == &a);
+    assert((int*)int_b == &b);
+    assert((char*)int_c == &c);
+
+    assert(((int*)int_a) + 1 == (&a + 1));
+    assert(((int*)int_b) - 1 == (&b - 1));
 
     return 0;
 }

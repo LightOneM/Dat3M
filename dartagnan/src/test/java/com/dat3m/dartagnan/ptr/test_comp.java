@@ -2,7 +2,6 @@ package com.dat3m.dartagnan.ptr;
 
 import com.dat3m.dartagnan.configuration.Arch;
 import com.dat3m.dartagnan.configuration.OptionNames;
-import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
@@ -17,16 +16,15 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import static com.dat3m.dartagnan.configuration.Arch.*;
-import static com.dat3m.dartagnan.utils.ResourceHelper.getTestResourcePath;
 import static com.dat3m.dartagnan.utils.Result.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class test extends AbstractCTest {
+public class test_comp extends AbstractCTest {
 
     private final int bound;
 
-    public test(String name, Arch target, Result expected, int bound) {
+    public test_comp(String name, Arch target, Result expected, int bound) {
         super(name, target, expected);
         this.bound = bound;
     }
