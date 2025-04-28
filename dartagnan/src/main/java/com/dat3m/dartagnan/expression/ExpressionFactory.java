@@ -422,9 +422,7 @@ public final class ExpressionFactory {
         final Type type = leftOperand.getType();
         if (type instanceof PointerType) {
             return makePtrCmp(leftOperand,PtrCmpOp.EQ, rightOperand);
-
         }
-
         else if (type instanceof BooleanType) {
             return makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
         } else if (type instanceof IntegerType) {

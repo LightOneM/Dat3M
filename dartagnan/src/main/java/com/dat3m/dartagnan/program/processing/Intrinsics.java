@@ -7,6 +7,7 @@ import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
@@ -1409,7 +1410,7 @@ public class Intrinsics {
         final int destsz = destszValue.getValueAsInt();
 
         // Runtime checks
-        final Expression nullExpr = expressions.makeZero(types.getArchType());
+        final Expression nullExpr = expressions.makeNullLiteral(types.getPointerType());
         final Expression destIsNull = expressions.makeEQ(dest, nullExpr);
         final Expression srcIsNull = expressions.makeEQ(src, nullExpr);
 
@@ -1423,10 +1424,12 @@ public class Intrinsics {
         final Expression countGtMax = expressions.makeGT(castCountExpr, rsize_max, false);
         final Expression countGtdestszExpr = expressions.makeGT(castCountExpr, castDestszExpr, false);
         final Expression invalidCount = expressions.makeOr(countGtMax, countGtdestszExpr);
+        Expression srcInt = expressions.makeIntegerCast(src,types.getArchType(),false);
+        Expression destInt = expressions.makeIntegerCast(dest,types.getArchType(),false);
         final Expression overlap = expressions.makeAnd(
-                expressions.makeGT(expressions.makeAdd(src, castCountExpr), dest, false),
-                expressions.makeGT(expressions.makeAdd(dest, castCountExpr), src, false));
-
+                expressions.makeGT(expressions.makeAdd(srcInt, castCountExpr), destInt, false),
+                expressions.makeGT(expressions.makeAdd(destInt, castCountExpr), srcInt, false));
+        // FIXME think about implementing ptr_GT:
         final List<Event> replacement = new ArrayList<>();
         
         Label check1 = EventFactory.newLabel("__memcpy_s_check_1");
@@ -1462,7 +1465,7 @@ public class Intrinsics {
         ));
         for (int i = 0; i < destsz; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression destAddr = expressions.makePtrAddOffset(dest, offset);
             final Expression zero = expressions.makeZero(types.getArchType());
             replacement.add(
                 EventFactory.newStore(destAddr, zero)
@@ -1478,8 +1481,8 @@ public class Intrinsics {
         replacement.add(success);        
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression srcAddr = expressions.makePtrAddOffset(src, offset);
+            final Expression destAddr = expressions.makePtrAddOffset(dest, offset);
             // FIXME: We have no other choice but to load ptr-sized chunks for now
             final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
 

@@ -996,6 +996,15 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return expressions.makeIntXor(left, right);
     }
 
+
+
+    private Expression intCastExpression(TypeConstContext operand, TypeContext target, boolean signed) {
+        final Expression operandExpression = visitTypeConst(operand);
+        final Type targetType = parseType(target);
+        checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
+        return expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
+    }
+
     // Conversions
 
     @Override
@@ -1079,12 +1088,6 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         final Type targetType = parseType(target);
         checkSupport(targetType instanceof PointerType, "Non-type type %s.", target);
         return expressions.makePtrCast(operandExpression, (PointerType) targetType);
-    }
-    private Expression intCastExpression(TypeConstContext operand, TypeContext target, boolean signed) {
-        final Expression operandExpression = visitTypeConst(operand);
-        final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
-        return expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

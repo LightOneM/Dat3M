@@ -8,6 +8,7 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
@@ -161,7 +162,7 @@ public class ThreadCreation implements ProgramProcessor {
                     }
                     case P_THREAD_SELF -> {
                         final Register resultRegister = getResultRegister(call);
-                        assert resultRegister.getType() instanceof IntegerType;
+                        assert resultRegister.getType() instanceof IntegerType;// TODO check if int or pointer
                         assert arguments.isEmpty();
                         final Expression tidExpr = expressions.makeValue(thread.getId(),
                                 (IntegerType) resultRegister.getType());
@@ -197,6 +198,7 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Expression> arguments = call.getArguments();
             assert arguments.size() == 2;
             final Expression tidExpr = arguments.get(0);
+            final Expression tidExprInt = expressions.makeIntegerCast(tidExpr,types.getArchType(),false);
             // TODO: support return values for threads
             // final Expression returnAddr = arguments.get(1);
 
@@ -255,8 +257,10 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> switchJumpTable = new ArrayList<>();
             for (Expression tid : tid2joinCases.keySet()) {
                 switchJumpTable.add(EventFactory.newJump(
-                        expressions.makeEQ(tidExpr, tid), (Label)tid2joinCases.get(tid).get(0))
+                        expressions.makeEQ(tidExprInt, tid), (Label)tid2joinCases.get(tid).get(0))
+                        // TODO find a better way to do it
                 );
+                // System.out.println(tidExpr.getClass()+ "  " +tid.getClass());
             }
             // Add default case for when no tid matches. We make the join just fail here as if it
             // was waiting for a never-terminating thread.

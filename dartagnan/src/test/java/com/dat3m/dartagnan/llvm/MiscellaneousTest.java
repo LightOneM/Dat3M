@@ -51,6 +51,7 @@ public class MiscellaneousTest extends AbstractCTest {
             ConfigurationBuilder builder = Configuration.builder();
             if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz")) {
                 builder.setOption(OptionNames.USE_INTEGERS, "false");
+                builder.setOption(OptionNames.USE_BVPOINTERS, "false");
             }
             if (name.equals("recursion")) {
                 builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
