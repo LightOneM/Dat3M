@@ -18,7 +18,8 @@ mvn -Dmaven.test.skip=true install
     5. Update property encoder
 
     
+update witness
 
-6.disable all optimisations
-7.fix witness
-8.
+type traacj=king in paper (base offset type)
+
+make locks and lfds work

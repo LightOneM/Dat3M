@@ -127,9 +127,7 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
         }
         return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
     }
-
-
-        // TODO implrmrnt recursive decent
+        // TODO implement recursive decent
     @Override
     public Expression visitLeafExpression(LeafExpression expr) {
         return expr;

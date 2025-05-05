@@ -159,10 +159,10 @@ public class ThreadCreation implements ProgramProcessor {
                         tid2ComAddrMap.put(tidExpr, comAddress);
 
                         nextTid++;
-                    }
+                    } //separate p_thread self from id
                     case P_THREAD_SELF -> {
                         final Register resultRegister = getResultRegister(call);
-                        assert resultRegister.getType() instanceof IntegerType;// TODO check if int or pointer
+                        assert resultRegister.getType() instanceof PointerType;// TODO check if int or pointer
                         assert arguments.isEmpty();
                         final Expression tidExpr = expressions.makeValue(thread.getId(),
                                 (IntegerType) resultRegister.getType());

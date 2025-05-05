@@ -1,5 +1,6 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
+import com.dat3m.dartagnan.encoding.formulas.TupleValue;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
@@ -15,6 +16,7 @@ import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.ReadFrom;
 import com.dat3m.dartagnan.wmm.Relation;
+import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -76,7 +78,7 @@ public class ExecutionGraphVisualizer {
     }
 
     public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModelNext model) throws IOException {
-        computeAddressMap(model);
+        // computeAddressMap(model);
         graphviz.beginDigraph(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addEvents(model);
@@ -94,11 +96,11 @@ public class ExecutionGraphVisualizer {
         return (x, y) -> true;
     }
 
-    private void computeAddressMap(ExecutionModelNext model) {
-        model.getMemoryLayoutMap().entrySet().stream()
-             .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().getValue()))
-             .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
-    }
+//    private void computeAddressMap(ExecutionModelNext model) {
+//        model.getMemoryLayoutMap().entrySet().stream()
+//             .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().getValue()))
+//             .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
+//    }
 
     private List<EventModel> getEventModelsToShow(ThreadModel tm) {
         return tm.getEventModels()
@@ -266,21 +268,30 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-    private String getAddressString(ValueModel address) {
-        final BigInteger addrValue = (BigInteger) address.getValue();
-        final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
-                .filter(o -> ((BigInteger) o.address().getValue()).compareTo(addrValue) <= 0)
-                .findFirst().orElse(null);
+//    private String getAddressString(ValueModel address) {
+//        final BigInteger addrValue = (BigInteger) address.getValue();
+//        final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
+//                .filter(o -> ((BigInteger) o.address().getValue()).compareTo(addrValue) <= 0)
+//                .findFirst().orElse(null);
+//
+//        if (accObj == null) {
+//            return addrValue + " [OOB]";
+//        } else {
+//            final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().getValue()).add(accObj.size())) >= 0;
+//            final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().getValue());
+//            return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
+//                    !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
+//                    isOOB ? " [OOB]" : ""
+//            );
+//        }
+//    }
 
-        if (accObj == null) {
-            return addrValue + " [OOB]";
+    private String getAddressString(ValueModel address) {
+        final String addr = address.getValue().toString();
+        if (Objects.equals(addr, "")) {
+            return "[OOB]";
         } else {
-            final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().getValue()).add(accObj.size())) >= 0;
-            final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().getValue());
-            return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
-                    !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
-                    isOOB ? " [OOB]" : ""
-            );
+            return "ptr" + addr;
         }
     }
 

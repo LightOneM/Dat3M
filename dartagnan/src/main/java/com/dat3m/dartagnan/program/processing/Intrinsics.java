@@ -541,14 +541,14 @@ public class Intrinsics {
         final Program program = call.getFunction().getProgram();
         final long threadCount = program.getThreads().size();
         final int pointerBytes = types.getMemorySizeInBytes(types.getPointerType());
-        final Register storageAddressRegister = call.getFunction().newRegister(types.getArchType());
+        final Register storageAddressRegister = call.getFunction().newRegister(types.getPointerType());
         final Expression size = expressions.makeValue((threadCount + 1) * pointerBytes, types.getArchType());
         final Expression destructorOffset = expressions.makeValue(threadCount * pointerBytes, types.getArchType());
         //TODO call destructor at each thread's normal exit
         return List.of(
                 EventFactory.newAlloc(storageAddressRegister, types.getArchType(), size, true, true),
-                EventFactory.newStore(keyAddress, storageAddressRegister),
-                EventFactory.newStore(expressions.makeAdd(storageAddressRegister, destructorOffset), destructor),
+                EventFactory.newStore(keyAddress, expressions.makeIntegerCast(storageAddressRegister,types.getArchType(),false)),
+                EventFactory.newStore(expressions.makePtrAddOffset(storageAddressRegister, destructorOffset), destructor),
                 assignSuccess(errorRegister)
         );
     }
@@ -571,7 +571,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newLoad(result, expressions.makeAdd(key, offset))
+                EventFactory.newLoad(result, expressions.makePtrAddOffset(expressions.makePtrCast(key,types.getPointerType()), offset))
         );
     }
 
@@ -583,7 +583,7 @@ public class Intrinsics {
         final int threadID = call.getThread().getId();
         final Expression offset = expressions.makeValue(threadID, (IntegerType) key.getType());
         return List.of(
-                EventFactory.newStore(expressions.makeAdd(key, offset), value),
+                EventFactory.newStore(expressions.makePtrAddOffset(expressions.makePtrCast(key,types.getPointerType()), offset), value),
                 assignSuccess(errorRegister)
         );
     }

@@ -329,6 +329,13 @@ public final class EncodingContext {
         if (left instanceof BooleanFormula l && right instanceof BooleanFormula r) {
             return booleanFormulaManager.equivalence(l, r);
         }
+        if (right instanceof BooleanFormula r ) {
+            return booleanFormulaManager.equivalence(toBoolean(left), toBoolean(r));
+        }
+        if (left instanceof BooleanFormula l ) {
+            return booleanFormulaManager.equivalence(toBoolean(l), toBoolean(right));
+        }
+
         if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
             return tupleFormulaManager.equal(l, r);
         }

@@ -5,6 +5,7 @@ import com.dat3m.dartagnan.configuration.Property;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.utils.rules.Providers;
+import com.dat3m.dartagnan.verification.solving.AssumeSolver;
 import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import com.dat3m.dartagnan.wmm.Wmm;
 import org.junit.Test;
@@ -89,9 +90,15 @@ public class VMMLocksTest extends AbstractCTest {
         });
     }
 
-    @Test
+    //@Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        assertEquals(expected, s.getResult());
+    }
+
+    @Test
+    public void testAssume() throws Exception {
+        AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());
     }
 }

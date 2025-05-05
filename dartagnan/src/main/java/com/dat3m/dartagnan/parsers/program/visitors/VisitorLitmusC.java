@@ -6,6 +6,7 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
@@ -29,6 +30,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = programBuilder.getTypeFactory().getArchType();
+    private final PointerType pointerType = programBuilder.getTypeFactory().getPointerType();
     private final int archSize = TypeFactory.getInstance().getMemorySizeInBytes(archType);
     private int currentThread;
     private int scope;
@@ -195,7 +197,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         //  For now, herd7 also seems to ignore most modifiers, in particular the atomic one.
         String name = ctx.varName().getText();
         MemoryObject object = programBuilder.getOrNewMemoryObject(name);
-        Register register = programBuilder.getOrNewRegister(scope, name, archType);
+        Register register = programBuilder.getOrNewRegister(scope, name, pointerType);
         boolean atomicity = ctx.pointerTypeSpecifier().atomicTypeSpecifier() != null
                 || ctx.pointerTypeSpecifier().basicTypeSpecifier().AtomicInt() != null;
         if (!atomicity) {

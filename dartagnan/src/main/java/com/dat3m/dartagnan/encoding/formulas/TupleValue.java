@@ -11,4 +11,5 @@ public record TupleValue(List<?> values) {
     public String toString() {
         return values.stream().map(Object::toString).collect(Collectors.joining(", ", "( ", " )"));
     }
+
 }

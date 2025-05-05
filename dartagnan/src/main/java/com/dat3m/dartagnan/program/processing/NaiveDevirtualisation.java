@@ -264,7 +264,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
         @Override
         public Expression visitFunction(Function function) {
-            return func2AddressMap.containsKey(function) ? func2AddressMap.get(function) : function;
+            return func2AddressMap.containsKey(function) ? expressions.makePtrCast(func2AddressMap.get(function),types.getPointerType()) : function;
         }
     }
 

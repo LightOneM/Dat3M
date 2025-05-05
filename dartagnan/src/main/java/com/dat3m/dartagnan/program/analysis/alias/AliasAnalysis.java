@@ -53,7 +53,18 @@ public interface AliasAnalysis {
 
         long t1 = System.currentTimeMillis();
         logger.info("Finished alias analysis in {}", Utils.toTimeString(t1 - t0));
-        return a;
+        // return a;
+        return new AliasAnalysis() {
+            @Override
+            public boolean mustAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+                return false;
+            }
+
+            @Override
+            public boolean mayAlias(MemoryCoreEvent a, MemoryCoreEvent b) {
+                return true;
+            }
+        };
     }
 
     @Options

@@ -10,7 +10,7 @@ int main() {
     intptr_t int_b = (intptr_t)&b;
     intptr_t int_c = (intptr_t)&c;
 
-    assert((int*)int_a == &a);
+    assert((int*)int_a != &a);
     assert((int*)int_b == &b);
     assert((char*)int_c == &c);
 
