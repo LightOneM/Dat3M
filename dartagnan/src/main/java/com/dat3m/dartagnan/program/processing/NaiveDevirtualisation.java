@@ -44,8 +44,6 @@ import java.util.stream.Collectors;
  */
 public class NaiveDevirtualisation implements ProgramProcessor {
 
-    private final TypeFactory types = TypeFactory.getInstance();
-
     private static final Logger logger = LogManager.getLogger(NaiveDevirtualisation.class);
 
     private int nextAvailableFuncAddress = 8; // We use 8-aligned addresses
@@ -163,7 +161,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
             for (Function possibleTarget : possibleTargets) {
                 final IntLiteral targetAddress = func2AddressMap.get(possibleTarget);
                 final Label caseLabel = EventFactory.newLabel(String.format("__Ldevirt_%s#%s", targetAddress.getValue(), devirtCounter));
-                final CondJump caseJump = EventFactory.newJump(expressions.makeEQ(expressions.makeIntegerCast(funcPtr,types.getArchType(),false), targetAddress), caseLabel);
+                final CondJump caseJump = EventFactory.newJump(expressions.makeEQ(funcPtr, targetAddress), caseLabel);
                 caseLabels.add(caseLabel);
                 caseJumps.add(caseJump);
             }
@@ -264,7 +262,7 @@ public class NaiveDevirtualisation implements ProgramProcessor {
 
         @Override
         public Expression visitFunction(Function function) {
-            return func2AddressMap.containsKey(function) ? expressions.makePtrCast(func2AddressMap.get(function),types.getPointerType()) : function;
+            return func2AddressMap.containsKey(function) ? func2AddressMap.get(function) : function;
         }
     }
 

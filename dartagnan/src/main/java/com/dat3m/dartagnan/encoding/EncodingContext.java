@@ -1,35 +1,6 @@
 package com.dat3m.dartagnan.encoding;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.sosy_lab.common.configuration.InvalidConfigurationException;
-import org.sosy_lab.common.configuration.Option;
-import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BitvectorFormula;
-import org.sosy_lab.java_smt.api.BitvectorFormulaManager;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.Formula;
-import org.sosy_lab.java_smt.api.FormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import com.dat3m.dartagnan.configuration.ProgressModel;
-import com.dat3m.dartagnan.encoding.formulas.TupleFormula;
-import com.dat3m.dartagnan.encoding.formulas.TupleFormulaManager;
-import com.dat3m.dartagnan.expression.Expression;
-import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.expression.integers.IntCmpOp;
-import com.dat3m.dartagnan.expression.type.*;
-import com.dat3m.dartagnan.expression.type.AggregateType;
-import com.dat3m.dartagnan.expression.type.ArrayType;
-import com.dat3m.dartagnan.expression.type.BooleanType;
+import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.IntegerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Register;
@@ -38,26 +9,32 @@ import com.dat3m.dartagnan.program.analysis.ExecutionAnalysis;
 import com.dat3m.dartagnan.program.analysis.alias.AliasAnalysis;
 import com.dat3m.dartagnan.program.event.BlockingEvent;
 import com.dat3m.dartagnan.program.event.Event;
-import com.dat3m.dartagnan.program.event.MemoryEvent;
 import com.dat3m.dartagnan.program.event.RegWriter;
-
-import static com.dat3m.dartagnan.configuration.OptionNames.*;
-import static com.dat3m.dartagnan.program.event.Tag.INIT;
-import static com.dat3m.dartagnan.program.event.Tag.WRITE;
-
-import com.dat3m.dartagnan.program.event.core.CondJump;
-import com.dat3m.dartagnan.program.event.core.Load;
-import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
-import com.dat3m.dartagnan.program.event.core.NamedBarrier;
-import com.dat3m.dartagnan.program.event.core.Store;
+import com.dat3m.dartagnan.program.event.core.*;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
+import com.dat3m.dartagnan.smt.FormulaManagerExt;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.verification.VerificationTask;
 import com.dat3m.dartagnan.wmm.Relation;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.axiom.Acyclicity;
 import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
+import org.sosy_lab.common.configuration.Options;
+import org.sosy_lab.java_smt.api.BooleanFormula;
+import org.sosy_lab.java_smt.api.BooleanFormulaManager;
+import org.sosy_lab.java_smt.api.FormulaManager;
+import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.dat3m.dartagnan.configuration.OptionNames.*;
+import static com.dat3m.dartagnan.program.event.Tag.INIT;
+import static com.dat3m.dartagnan.program.event.Tag.WRITE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -71,15 +48,21 @@ public final class EncodingContext {
     private final ExecutionAnalysis executionAnalysis;
     private final AliasAnalysis aliasAnalysis;
     private final RelationAnalysis relationAnalysis;
-    private final FormulaManager formulaManager;
+    private final FormulaManagerExt formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
-    private final TupleFormulaManager tupleFormulaManager;
-    private final BitvectorFormulaManager bitvectorFormulaManager;
+    private final ExpressionEncoder exprEncoder;
 
-    private final int ptrBitWidth = TypeFactory.getInstance().getArchType().getBitWidth();
+    private final ExpressionFactory exprs = ExpressionFactory.getInstance();
+
+    public enum ProvenanceModel {
+        NO,
+        SIMPLE,
+    }
+
+    ProvenanceModel provenance = ProvenanceModel.SIMPLE;
 
     @Option(
-            name = IDL_TO_SAT,
+            name=IDL_TO_SAT,
             description = "Use SAT-based encoding for totality and acyclicity.",
             secure = true)
     boolean useSATEncoding = false;
@@ -94,19 +77,17 @@ public final class EncodingContext {
             secure = true)
     boolean useIntegers = false;
 
-    @Option(name = USE_BVPOINTERS,
-            description = "Pointers are encoded with bitvectors instead of proper pointer types.  Default: false.",
-            secure = true)
-    boolean useBVPointers = false;
-
     private final Map<Event, BooleanFormula> controlFlowVariables = new HashMap<>();
     private final Map<Event, BooleanFormula> executionVariables = new HashMap<>();
     private final Map<NamedBarrier, BooleanFormula> syncVariables = new HashMap<>();
-    private final Map<Event, Formula> addresses = new HashMap<>();
-    private final Map<Event, Formula> values = new HashMap<>();
-    private final Map<Event, Formula> results = new HashMap<>();
-    private final Map<MemoryObject, Formula> objBases = new HashMap<>();
-    private final Map<MemoryObject, Formula> objSize = new HashMap<>();
+
+    private final Map<Event, TypedFormula<?, ?>> values = new HashMap<>();
+    private final Map<Event, TypedFormula<?, ?>> results = new HashMap<>();
+
+    // TODO: Once we have a PointerType, this needs to get updated.
+    private final Map<Event, TypedFormula<?, ?>> addresses = new HashMap<>();
+    private final Map<MemoryObject, TypedFormula<?, ?>> objAddress = new HashMap<>();
+    private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
         verificationTask = checkNotNull(t);
@@ -115,10 +96,9 @@ public final class EncodingContext {
         executionAnalysis = a.requires(ExecutionAnalysis.class);
         aliasAnalysis = a.requires(AliasAnalysis.class);
         relationAnalysis = a.requires(RelationAnalysis.class);
-        formulaManager = m;
-        booleanFormulaManager = m.getBooleanFormulaManager();
-        tupleFormulaManager = new TupleFormulaManager(this);
-        bitvectorFormulaManager = m.getBitvectorFormulaManager();
+        formulaManager = new FormulaManagerExt(m);
+        booleanFormulaManager = formulaManager.getBooleanFormulaManager();
+        exprEncoder = new ExpressionEncoder(this);
     }
 
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
@@ -137,20 +117,6 @@ public final class EncodingContext {
         return context;
     }
 
-    public List<List<BitvectorFormula>> getObjBasesAndSizesList() {
-
-        List<List<BitvectorFormula>> result = new ArrayList<>();
-        for (MemoryObject memobj : objBases.keySet()) {
-            result.add(List.of(
-                            toBitvector(objBases.get(memobj), ptrBitWidth),
-                            toBitvector(objSize.get(memobj), ptrBitWidth)
-                    )
-            );
-        }
-        return result;
-    }
-
-
     public boolean usesSATEncoding() {
         return useSATEncoding;
     }
@@ -163,7 +129,7 @@ public final class EncodingContext {
         return analysisContext;
     }
 
-    public FormulaManager getFormulaManager() {
+    public FormulaManagerExt getFormulaManager() {
         return formulaManager;
     }
 
@@ -171,78 +137,19 @@ public final class EncodingContext {
         return booleanFormulaManager;
     }
 
-    public TupleFormulaManager getTupleFormulaManager() {
-        return tupleFormulaManager;
-    }
+    public ExpressionEncoder getExpressionEncoder() { return exprEncoder; }
 
-    public BitvectorFormulaManager getBitvectorFormulaManager() {
-        return bitvectorFormulaManager;
-    }
+    public ExpressionFactory getExpressionFactory() { return exprs; }
 
-    public int getPtrBitWidth() {
-        return ptrBitWidth;
-    }
-
-    public Formula encodeFinalExpression(Expression expression) {
-        return new ExpressionEncoder(this, null).encode(expression);
-    }
-
-    public BooleanFormula encodeFinalExpressionAsBoolean(Expression expression) {
-        return new ExpressionEncoder(this, null).encodeAsBoolean(expression);
-    }
-
-    public BooleanFormula encodeExpressionAsBooleanAt(Expression expression, Event event) {
-        return new ExpressionEncoder(this, event).encodeAsBoolean(expression);
-    }
-
-    public Formula encodeExpressionAt(Expression expression, Event event) {
-        return new ExpressionEncoder(this, event).encode(expression);
-    }
-
-    public BooleanFormula encodeComparison(IntCmpOp op, Formula lhs, Formula rhs) {
-        if (lhs instanceof BooleanFormula l && rhs instanceof BooleanFormula r) {
-            BooleanFormulaManager bmgr = booleanFormulaManager;
-            return switch (op) {
-                case EQ -> bmgr.equivalence(l, r);
-                case NEQ -> bmgr.not(bmgr.equivalence(l, r));
-                default -> throw new UnsupportedOperationException(
-                        String.format("Encoding of IntCmpOp operation %s not supported on boolean formulas.", op));
-            };
-        }
-        if (lhs instanceof IntegerFormula l && rhs instanceof IntegerFormula r) {
-            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
-            return switch (op) {
-                case EQ -> imgr.equal(l, r);
-                case NEQ -> booleanFormulaManager.not(imgr.equal(l, r));
-                case LT, ULT -> imgr.lessThan(l, r);
-                case LTE, ULTE -> imgr.lessOrEquals(l, r);
-                case GT, UGT -> imgr.greaterThan(l, r);
-                case GTE, UGTE -> imgr.greaterOrEquals(l, r);
-            };
-        }
-        if (lhs instanceof BitvectorFormula l && rhs instanceof BitvectorFormula r) {
-            return switch (op) {
-                case EQ -> bitvectorFormulaManager.equal(l, r);
-                case NEQ -> booleanFormulaManager.not(bitvectorFormulaManager.equal(l, r));
-                case LT, ULT -> bitvectorFormulaManager.lessThan(l, r, op.equals(IntCmpOp.LT));
-                case LTE, ULTE -> bitvectorFormulaManager.lessOrEquals(l, r, op.equals(IntCmpOp.LTE));
-                case GT, UGT -> bitvectorFormulaManager.greaterThan(l, r, op.equals(IntCmpOp.GT));
-                case GTE, UGTE -> bitvectorFormulaManager.greaterOrEquals(l, r, op.equals(IntCmpOp.GTE));
-            };
-        }
-        throw new UnsupportedOperationException("Encoding not supported for IntCmpOp: " + lhs + " " + op + " " + rhs);
-    }
+    // ====================================================================================
+    // Control flow
 
     public BooleanFormula controlFlow(Event event) {
         return controlFlowVariables.get(event);
     }
 
-    public BooleanFormula jumpCondition(CondJump event) {
-        return encodeExpressionAsBooleanAt(event.getGuard(), event);
-    }
-
     public BooleanFormula jumpTaken(CondJump jump) {
-        return booleanFormulaManager.and(execution(jump), jumpCondition(jump));
+        return booleanFormulaManager.and(execution(jump), exprEncoder.encodeBooleanAt(jump.getGuard(), jump).formula());
     }
 
     public BooleanFormula blocked(BlockingEvent barrier) {
@@ -264,10 +171,12 @@ public final class EncodingContext {
     /**
      * Simple formula proposing the execution of two events.
      * Does not test for mutual exclusion.
-     *
-     * @param first  Some event of a program to be encoded.
-     * @param second Another event of the same program.
-     * @return Proposition that both {@code first} and {@code second} are included in the modelled execution.
+     * @param first
+     * Some event of a program to be encoded.
+     * @param second
+     * Another event of the same program.
+     * @return
+     * Proposition that both {@code first} and {@code second} are included in the modelled execution.
      */
     public BooleanFormula execution(Event first, Event second) {
         boolean b = first.getGlobalId() < second.getGlobalId();
@@ -282,171 +191,58 @@ public final class EncodingContext {
         return booleanFormulaManager.and(execution(x), execution(y));
     }
 
+    // ====================================================================================
+    // Data flow
+
+    public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
+        return aliasAnalysis.mustAlias(first, second)
+                ? booleanFormulaManager.makeTrue()
+                : exprEncoder.equal(address(first), address(second));
+    }
+
+    public BooleanFormula sameResult(RegWriter first, RegWriter second) {
+        return exprEncoder.equal(result(first), result(second));
+    }
+
+    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second, ExpressionEncoder.ConversionMode cmode) {
+        return exprEncoder.equal(value(first), value(second), cmode);
+    }
+
+    public BooleanFormula sameValue(MemoryCoreEvent first, MemoryCoreEvent second) {
+        return sameValue(first, second, ExpressionEncoder.ConversionMode.NO);
+    }
+
+    public TypedFormula<?, ?> address(MemoryCoreEvent event) {
+        return addresses.get(event);
+    }
+
+    public TypedFormula<?, ?> address(MemoryObject memoryObject) { return objAddress.get(memoryObject); }
+
+    public TypedFormula<IntegerType, ?> size(MemoryObject memoryObject) {
+        return objSize.get(memoryObject);
+    }
+
+    public TypedFormula<?, ?> value(MemoryCoreEvent event) {
+        return values.get(event);
+    }
+
+    public TypedFormula<?, ?> result(RegWriter event) {
+        return results.get(event);
+    }
+
+    // ====================================================================================
+    // Relations
+
     public BooleanFormula dependency(Event first, Event second) {
         return booleanFormulaManager.makeVariable("idd " + first.getGlobalId() + " " + second.getGlobalId());
     }
 
-    public Formula lastValue(MemoryObject base, int offset, int size) {
-        checkArgument(base.isInRange(offset), "Array index out of bounds");
-        final String name = String.format("last_val_at_%s_%d", base, offset);
-        if (useIntegers) {
-            return formulaManager.getIntegerFormulaManager().makeVariable(name);
+    public IntegerFormula memoryOrderClock(Event write) {
+        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
+        if (write.hasTag(INIT)) {
+            return formulaManager.getIntegerFormulaManager().makeNumber(0);
         }
-        return bitvectorFormulaManager.makeVariable(size, name);
-    }
-
-    public enum ConversionMode {
-        NO,
-        LEFT_TO_RIGHT,
-        RIGHT_TO_LEFT,
-    }
-
-    public BooleanFormula equal(Formula left, Formula right, ConversionMode cMode) {
-//        if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
-//            return tupleFormulaManager.equal(l, r);
-//        }
-        if (cMode == ConversionMode.LEFT_TO_RIGHT) {
-            return equal(right, left, ConversionMode.RIGHT_TO_LEFT);
-        } else if (cMode == ConversionMode.NO && !new EncodingHelper(formulaManager, tupleFormulaManager).hasSameType(left, right)) {
-            final String error = String.format("Mismatching formula types: %s(%s) and %s(%s)", left, left.getClass(), right, right.getClass());
-            throw new IllegalArgumentException(error);
-        }
-
-        if (left instanceof IntegerFormula l) {
-            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
-            return imgr.equal(l, toInteger(right));
-        }
-        if (right instanceof IntegerFormula r) {
-            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
-            return imgr.equal(toInteger(left), r);
-        }
-        if (left instanceof BitvectorFormula l) {
-            return bitvectorFormulaManager.equal(l, toBitvector(right, bitvectorFormulaManager.getLength(l)));
-        }
-        if (right instanceof BitvectorFormula r) {
-            return bitvectorFormulaManager.equal(toBitvector(left, bitvectorFormulaManager.getLength(r)), r);
-        }
-        if (left instanceof BooleanFormula l && right instanceof BooleanFormula r) {
-            return booleanFormulaManager.equivalence(l, r);
-        }
-        if (right instanceof BooleanFormula r ) {
-            return booleanFormulaManager.equivalence(toBoolean(left), toBoolean(r));
-        }
-        if (left instanceof BooleanFormula l ) {
-            return booleanFormulaManager.equivalence(toBoolean(l), toBoolean(right));
-        }
-
-        if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
-            return tupleFormulaManager.equal(l, r);
-        }
-        throw new UnsupportedOperationException(String.format("Unknown types for equal(%s,%s)", left, right));
-    }
-
-    public BooleanFormula equal(Formula left, Formula right) {
-        return equal(left, right, ConversionMode.NO);
-    }
-
-    public IntegerFormula toInteger(Formula formula) {
-        if (formula instanceof IntegerFormula f) {
-            return f;
-        }
-        if (formula instanceof TupleFormula f) {
-            IntegerFormulaManager ifm = formulaManager.getIntegerFormulaManager();
-            IntegerFormula sum = toInteger(f.elements.get(0));
-            for (int c = 1; f.elements.size() > c; c++) {
-                sum = ifm.add(sum, toInteger(f.elements.get(c)));
-            }
-            return sum;
-        }
-        if (formula instanceof BooleanFormula f) {
-            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
-            IntegerFormula zero = imgr.makeNumber(0);
-            IntegerFormula one = imgr.makeNumber(1);
-            return booleanFormulaManager.ifThenElse(f, one, zero);
-        }
-        if (formula instanceof BitvectorFormula f) {
-            return bitvectorFormulaManager.toIntegerFormula(f, false);
-        }
-        throw new UnsupportedOperationException(String.format("Unknown type for toInteger(%s).", formula));
-    }
-
-    private BooleanFormula toBoolean(Formula formula) {
-        if (formula instanceof BooleanFormula f) {
-            return f;
-        }
-        return booleanFormulaManager.not(equalZero(formula));
-    }
-
-    private BitvectorFormula toBitvector(Formula formula, int length) {
-        if (formula instanceof BitvectorFormula f) {
-            int formulaLength = bitvectorFormulaManager.getLength(f);
-            // FIXME: Signedness may be wrong here.
-            return formulaLength >= length ?
-                    bitvectorFormulaManager.extract(f, length - 1, 0)
-                    : bitvectorFormulaManager.extend(f, length - formulaLength, false);
-        }
-        if (formula instanceof BooleanFormula f) {
-            BitvectorFormula zero = bitvectorFormulaManager.makeBitvector(length, 0);
-            BitvectorFormula one = bitvectorFormulaManager.makeBitvector(length, 1);
-            return booleanFormulaManager.ifThenElse(f, one, zero);
-        }
-        if (formula instanceof TupleFormula f) {
-            return toBitvector(bitvectorFormulaManager.add((BitvectorFormula) tupleFormulaManager.extract(f, 0), (BitvectorFormula) tupleFormulaManager.extract(f, 1)), length);
-
-        }
-        throw new UnsupportedOperationException(String.format("Unknown type for toBitvector(%s,%s).", formula, length));
-    }
-
-    public BooleanFormula equalZero(Formula formula) {
-        if (formula instanceof BooleanFormula f) {
-            return booleanFormulaManager.not(f);
-        }
-        if (formula instanceof IntegerFormula f) {
-            IntegerFormulaManager imgr = formulaManager.getIntegerFormulaManager();
-            return imgr.equal(f, imgr.makeNumber(0));
-        }
-        if (formula instanceof BitvectorFormula f) {
-            return bitvectorFormulaManager.equal(f, bitvectorFormulaManager.makeBitvector(bitvectorFormulaManager.getLength(f), 0));
-        }
-        if (formula instanceof TupleFormula tpformula) {
-            BooleanFormula result = booleanFormulaManager.makeTrue();
-            for (Formula element : tpformula.elements) {
-                result = booleanFormulaManager.and(equalZero(element), result);
-            }
-            return result;
-        }
-        throw new UnsupportedOperationException(String.format("Unknown type for equalZero(%s).", formula));
-    }
-
-    public BooleanFormula sameAddress(MemoryCoreEvent first, MemoryCoreEvent second) {
-        return aliasAnalysis.mustAlias(first, second) ? booleanFormulaManager.makeTrue() : equal(address(first), address(second));
-    }
-
-    public Formula address(MemoryEvent event) {
-        return addresses.get(event);
-    }
-
-    public Formula address(MemoryObject memoryObject) {
-        if (useBVPointers){
-            return toBitvector(objBases.get(memoryObject),TypeFactory.getInstance().getArchType().getBitWidth());
-        }
-        return tupleFormulaManager.makeTuple(List.of(objBases.get(memoryObject), bitvectorFormulaManager.makeBitvector(TypeFactory.getInstance().getArchType().getBitWidth(), BigInteger.ZERO)));
-    }
-
-    public Formula size(MemoryObject memoryObject) {
-        return objSize.get(memoryObject);
-    }
-
-    public Formula baseAddress(MemoryObject memoryObject) {
-        return objBases.get(memoryObject);
-    }
-
-    public Formula value(MemoryEvent event) {
-        return values.get(event);
-    }
-
-    public Formula result(RegWriter event) {
-        return results.get(event);
+        return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
     }
 
     public IntegerFormula clockVariable(String name, Event event) {
@@ -457,14 +253,6 @@ public final class EncodingContext {
     //  or verifying litmus code.
     public BooleanFormula lastCoVar(Event write) {
         return booleanFormulaManager.makeVariable("co_last(" + write.getGlobalId() + ")");
-    }
-
-    public IntegerFormula memoryOrderClock(Event write) {
-        checkArgument(write.hasTag(WRITE), "Cannot get a clock-var for non-writes.");
-        if (write.hasTag(INIT)) {
-            return formulaManager.getIntegerFormulaManager().makeNumber(0);
-        }
-        return formulaManager.getIntegerFormulaManager().makeVariable("co " + write.getGlobalId());
     }
 
     public BooleanFormula edgeVariable(String name, Event first, Event second) {
@@ -496,26 +284,16 @@ public final class EncodingContext {
         return edge(relation).encode(first, second);
     }
 
-    public Formula makeLiteral(Type type, BigInteger value) {
-        if (type instanceof BooleanType) {
-            return booleanFormulaManager.makeBoolean(!value.equals(BigInteger.ZERO));
-        }
-        if (type instanceof IntegerType integerType) {
-            if (useIntegers) {
-                return formulaManager.getIntegerFormulaManager().makeNumber(value);
-            } else {
-                return bitvectorFormulaManager.makeBitvector(integerType.getBitWidth(), value);
-            }
-        }
-        throw new UnsupportedOperationException(String.format("Encoding variable of type %s.", type));
-    }
+    // ====================================================================================
+    // Private implementation
 
     private void initialize() {
+        final TypeFactory types = TypeFactory.getInstance();
         // ------- Control flow variables -------
         // Only for the standard fair progress model we can merge CF variables.
         // TODO: It would also be possible for OBE/HSA in some cases if we refine the cf-equivalence classes
         //  to classes per thread.
-        final boolean mergeCFVars = shouldMergeCFVars && verificationTask.getProgressModel() == ProgressModel.FAIR;
+        final boolean mergeCFVars = shouldMergeCFVars && verificationTask.getProgressModel().isFair();
         if (mergeCFVars) {
             for (BranchEquivalence.Class cls : analysisContext.get(BranchEquivalence.class).getAllEquivalenceClasses()) {
                 BooleanFormula v = booleanFormulaManager.makeVariable("cf " + cls.getRepresentative().getGlobalId());
@@ -531,10 +309,10 @@ public final class EncodingContext {
 
         // ------- Memory object variables -------
         for (MemoryObject memoryObject : verificationTask.getProgram().getMemory().getObjects()) {
-            Type archType = TypeFactory.getInstance().getArchType();
-            // TODO this should be changed to bitvector???
-            objBases.put(memoryObject, bitvectorFormulaManager.makeVariable(ptrBitWidth, String.format("baseofof(%s)", memoryObject)));
-            objSize.put(memoryObject, bitvectorFormulaManager.makeVariable(ptrBitWidth, String.format("sizeof(%s)", memoryObject)));
+            objAddress.put(memoryObject, exprEncoder.encodeFinal(memoryObject));
+            objSize.put(memoryObject, exprEncoder.makeVariable(String.format("sizeof(%s)", memoryObject),
+                    TypeFactory.getInstance().getArchType())
+            );
         }
 
         // ------- Event variables  -------
@@ -545,21 +323,20 @@ public final class EncodingContext {
             if (!e.cfImpliesExec()) {
                 executionVariables.put(e, booleanFormulaManager.makeVariable("exec " + e.getGlobalId()));
             }
-            Formula r;
+            TypedFormula<?, ?> r;
             if (e instanceof RegWriter rw) {
                 Register register = rw.getResultRegister();
                 String name = register.getName() + "(" + e.getGlobalId() + "_result)";
-                Type type = register.getType();
-                r = makeVariable(name, type);
+                r = exprEncoder.makeVariable(name, register.getType());
             } else {
                 r = null;
             }
             if (e instanceof MemoryCoreEvent memEvent) {
-                addresses.put(e, encodeExpressionAt(memEvent.getAddress(), e));
+                addresses.put(e, exprEncoder.encodeAt(memEvent.getAddress(), memEvent));
                 if (e instanceof Load) {
                     values.put(e, r);
                 } else if (e instanceof Store store) {
-                    values.put(e, encodeExpressionAt(store.getMemValue(), e));
+                    values.put(e, exprEncoder.encodeAt(store.getMemValue(), e));
                 }
             }
             if (r != null) {
@@ -567,43 +344,4 @@ public final class EncodingContext {
             }
         }
     }
-
-    Formula makeVariable(String name, Type type) {
-        if (type instanceof BooleanType) {
-            return booleanFormulaManager.makeVariable(name);
-        }
-        if (type instanceof IntegerType integerType) {
-            if (useIntegers) {
-                return formulaManager.getIntegerFormulaManager().makeVariable(name);
-            } else {
-                return bitvectorFormulaManager.makeVariable(integerType.getBitWidth(), name);
-            }
-        }
-        if (type instanceof AggregateType || type instanceof ArrayType) {
-            final Map<Integer, Type> primitives = TypeFactory.getInstance().decomposeIntoPrimitives(type);
-            if (primitives != null) {
-                final List<Formula> elements = new ArrayList<>();
-                for (Map.Entry<Integer, Type> entry : primitives.entrySet()) {
-                    elements.add(makeVariable(name + "@" + entry.getKey(), entry.getValue()));
-                }
-                return tupleFormulaManager.makeTuple(elements);
-            }
-        }
-        if (type instanceof PointerType) {
-            if (useBVPointers) {
-                final BitvectorFormula pointer = bitvectorFormulaManager.makeVariable(ptrBitWidth, "Pointer" + "'" + name + "'");
-                return pointer;
-            }
-            final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth, "PtrBase" + "'" + name + "'");
-            final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth, "PtrOffset" + "'" + name + "'");
-            return tupleFormulaManager.makeTuple(List.of(base, offset));
-        }
-        throw new UnsupportedOperationException(String.format("Cannot encode variable of type %s.", type));
-    }
-
-//    PointerFormula makePointerVariable(String name) {
-//        final BitvectorFormula base = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrBase" + "'" + name + "'");
-//        final BitvectorFormula offset = bitvectorFormulaManager.makeVariable(ptrBitWidth,"PtrOffset" + "'" + name + "'");
-//        return tupleFormulaManager.makeTuple(List.of(base, offset));
-//    }
 }

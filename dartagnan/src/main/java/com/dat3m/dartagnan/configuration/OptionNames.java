@@ -30,7 +30,6 @@ public class OptionNames {
     public static final String C_TO_POWER_SCHEME = "compilation.cToPower";
 
     // Encoding Options
-    public static final String USE_BVPOINTERS = "encoding.bitvectors";
     public static final String USE_INTEGERS = "encoding.integers";
     public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
     public static final String REDUCE_ACYCLICITY_ENCODE_SETS = "encoding.wmm.reduceAcyclicityEncodeSets";

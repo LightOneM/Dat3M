@@ -8,7 +8,6 @@ import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
 import com.dat3m.dartagnan.expression.type.FunctionType;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.*;
@@ -25,7 +24,6 @@ import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.processing.compilation.Compilation;
 import com.dat3m.dartagnan.program.processing.transformers.MemoryTransformer;
-import com.dat3m.dartagnan.utils.printer.Printer;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
@@ -140,14 +138,13 @@ public class ThreadCreation implements ProgramProcessor {
                         final ThreadCreate createEvent = newThreadCreate(List.of(argument));
                         final IntLiteral tidExpr = expressions.makeValue(nextTid, archType);
                         final MemoryObject comAddress = program.getMemory().allocate(1);
-                        // final MemoryObject threadid = program.getMemory().allocate(1);
                         comAddress.setName("__com" + nextTid + "__" + targetFunction.getName());
                         comAddress.setInitialValue(0, expressions.makeZero(archType));
 
                         final List<Event> replacement = eventSequence(
                                 newReleaseStore(comAddress, expressions.makeTrue()),
                                 createEvent,
-                                newStore(pidResultAddress, tidExpr), //cast tid to pointer
+                                newStore(pidResultAddress, tidExpr),
                                 // TODO: Allow to return failure value (!= 0)
                                 newLocal(resultRegister, expressions.makeZero((IntegerType) resultRegister.getType()))
                         );
@@ -159,10 +156,10 @@ public class ThreadCreation implements ProgramProcessor {
                         tid2ComAddrMap.put(tidExpr, comAddress);
 
                         nextTid++;
-                    } //separate p_thread self from id
+                    }
                     case P_THREAD_SELF -> {
                         final Register resultRegister = getResultRegister(call);
-                        assert resultRegister.getType() instanceof PointerType;// TODO check if int or pointer
+                        assert resultRegister.getType() instanceof IntegerType;
                         assert arguments.isEmpty();
                         final Expression tidExpr = expressions.makeValue(thread.getId(),
                                 (IntegerType) resultRegister.getType());
@@ -198,7 +195,6 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Expression> arguments = call.getArguments();
             assert arguments.size() == 2;
             final Expression tidExpr = arguments.get(0);
-            final Expression tidExprInt = expressions.makeIntegerCast(tidExpr,types.getArchType(),false);
             // TODO: support return values for threads
             // final Expression returnAddr = arguments.get(1);
 
@@ -215,7 +211,8 @@ public class ThreadCreation implements ProgramProcessor {
                 final int tid = tidCandidate.getValueAsInt();
                 final Expression comAddrOfThreadToJoinWith = tid2ComAddrMap.get(tidCandidate);
 
-                if (tidExpr instanceof IntLiteral iConst && iConst.getValueAsInt() != tid) { // csst back to int                  // Little optimization if we join with a constant address
+                if (tidExpr instanceof IntLiteral iConst && iConst.getValueAsInt() != tid) {
+                    // Little optimization if we join with a constant address
                     continue;
                 }
 
@@ -257,10 +254,8 @@ public class ThreadCreation implements ProgramProcessor {
             final List<Event> switchJumpTable = new ArrayList<>();
             for (Expression tid : tid2joinCases.keySet()) {
                 switchJumpTable.add(EventFactory.newJump(
-                        expressions.makeEQ(tidExprInt, tid), (Label)tid2joinCases.get(tid).get(0))
-                        // TODO find a better way to do it
+                        expressions.makeEQ(tidExpr, tid), (Label)tid2joinCases.get(tid).get(0))
                 );
-                // System.out.println(tidExpr.getClass()+ "  " +tid.getClass());
             }
             // Add default case for when no tid matches. We make the join just fail here as if it
             // was waiting for a never-terminating thread.
@@ -420,7 +415,15 @@ public class ThreadCreation implements ProgramProcessor {
         FunctionType type = function.getFunctionType();
         List<String> args = Lists.transform(function.getParameterRegisters(), Register::getName);
         ThreadStart start = EventFactory.newThreadStart(null);
-        ScopeHierarchy scope = grid.getScoreHierarchy(tid);
+        Arch arch = function.getProgram().getArch();
+        ScopeHierarchy scope;
+        if (arch == Arch.VULKAN) {
+            scope = ScopeHierarchy.ScopeHierarchyForVulkan(grid.qfId(tid), grid.wgId(tid), grid.sgId(tid));
+        } else if (arch == Arch.OPENCL) {
+            scope = ScopeHierarchy.ScopeHierarchyForOpenCL(grid.dvId(tid), grid.wgId(tid), grid.sgId(tid));
+        } else {
+            throw new MalformedProgramException("Unsupported architecture for thread creation: " + arch);
+        }
         Thread thread = new Thread(name, type, args, tid, start, scope, Set.of());
         thread.copyDummyCountFrom(function);
         Label returnLabel = EventFactory.newLabel("RETURN_OF_T" + thread.getId());

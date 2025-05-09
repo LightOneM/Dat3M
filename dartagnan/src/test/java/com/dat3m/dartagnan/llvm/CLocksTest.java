@@ -1,7 +1,6 @@
 package com.dat3m.dartagnan.llvm;
 
 import com.dat3m.dartagnan.configuration.Arch;
-import com.dat3m.dartagnan.configuration.OptionNames;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;
@@ -9,8 +8,6 @@ import com.dat3m.dartagnan.verification.solving.RefinementSolver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.sosy_lab.common.configuration.Configuration;
-import org.sosy_lab.common.configuration.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -31,17 +28,6 @@ public class CLocksTest extends AbstractCTest {
     protected Provider<String> getProgramPathProvider() {
         return () -> getTestResourcePath("locks/" + name + ".ll");
     }
-
-
-    @Override
-    protected Provider<Configuration> getConfigurationProvider() {
-        return Provider.fromSupplier(() -> {
-            ConfigurationBuilder builder = Configuration.builder();
-                builder.setOption(OptionNames.USE_BVPOINTERS, "false");
-            return builder.build();
-        });
-    }
-
 
     @Override
     protected long getTimeout() {
@@ -169,12 +155,14 @@ public class CLocksTest extends AbstractCTest {
     @Test
     public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        System.out.println(s.getResult() + "<>" + expected);
         assertEquals(expected, s.getResult());
     }
 
-    //@Test
+    @Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        System.out.println(s.getResult() + "<>" + expected);
         assertEquals(expected, s.getResult());
     }
 }

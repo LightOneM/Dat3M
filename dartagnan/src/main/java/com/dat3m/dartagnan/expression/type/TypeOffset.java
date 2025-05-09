@@ -21,4 +21,3 @@ public record TypeOffset(Type type, int offset) {
         throw new UnsupportedOperationException(error);
     }
 }
-// TODO ask if we can remove this offset type, maybe in the second stage.

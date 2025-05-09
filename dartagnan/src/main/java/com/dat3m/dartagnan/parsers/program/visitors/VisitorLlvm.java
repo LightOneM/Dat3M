@@ -1,16 +1,13 @@
 package com.dat3m.dartagnan.parsers.program.visitors;
 
 import com.dat3m.dartagnan.exception.ParsingException;
+import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import com.dat3m.dartagnan.expression.*;
 import com.dat3m.dartagnan.expression.integers.IntBinaryOp;
 import com.dat3m.dartagnan.expression.type.*;
 import com.dat3m.dartagnan.parsers.LLVMIRBaseVisitor;
 import com.dat3m.dartagnan.parsers.LLVMIRParser.*;
-import com.dat3m.dartagnan.parsers.program.ParserAsm;
-import com.dat3m.dartagnan.parsers.program.ParserAsmPPC;
-import com.dat3m.dartagnan.parsers.program.ParserAsmRISCV;
-import com.dat3m.dartagnan.parsers.program.ParserAsmX86;
-import com.dat3m.dartagnan.parsers.program.ParserAsmArm;
+import com.dat3m.dartagnan.parsers.program.*;
 import com.dat3m.dartagnan.parsers.program.utils.ProgramBuilder;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
@@ -27,7 +24,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -39,9 +35,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.dat3m.dartagnan.exception.ProgramProcessingException;
 import static com.dat3m.dartagnan.expression.utils.ExpressionHelper.isAggregateLike;
-
 import static com.dat3m.dartagnan.program.event.EventFactory.*;
 import static com.dat3m.dartagnan.program.event.EventFactory.Llvm.newCompareExchange;
 import static com.google.common.base.Preconditions.checkState;
@@ -825,14 +819,11 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
     public Expression visitAddrSpaceCastInst(AddrSpaceCastInstContext ctx) {
         return conversionInstruction(ctx.typeValue(), ctx.type(), true);
     }
-// TODO ask about this
+
     private Register conversionInstruction(TypeValueContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeValue(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType || targetType instanceof PointerType , "Non-Integer or Non-Pointer in %s.", target);
-        final Expression result = targetType instanceof IntegerType
-                ? expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed)
-                : expressions.makePtrCast(operandExpression, (PointerType) targetType);
+        final Expression result = expressions.makeCast(operandExpression, targetType, signed);
         return assignToRegister(result);
     }
 
@@ -851,7 +842,8 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
 
     @Override
     public Expression visitNullConst(NullConstContext ctx) {
-        return expressions.makeNullLiteral((PointerType) pointerType);
+        return expressions.makeNullLiteral();
+        // return expressions.makeZero((IntegerType) pointerType);
     }
 
     @Override
@@ -996,53 +988,41 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         return expressions.makeIntXor(left, right);
     }
 
-
-
-    private Expression intCastExpression(TypeConstContext operand, TypeContext target, boolean signed) {
-        final Expression operandExpression = visitTypeConst(operand);
-        final Type targetType = parseType(target);
-        checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
-        return expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
-    }
-
     // Conversions
 
     @Override
     public Expression visitTruncExpr(TruncExprContext ctx) {
-        return intCastExpression(ctx.typeConst(), ctx.type(), false);
+        return castExpression(ctx.typeConst(), ctx.type(), false);
     }
 
     @Override
     public Expression visitZExtExpr(ZExtExprContext ctx) {
-        return intCastExpression(ctx.typeConst(), ctx.type(), false);
+        return castExpression(ctx.typeConst(), ctx.type(), false);
     }
 
     @Override
     public Expression visitSExtExpr(SExtExprContext ctx) {
-        return intCastExpression(ctx.typeConst(), ctx.type(), true);
+        return castExpression(ctx.typeConst(), ctx.type(), true);
     }
 
     @Override
     public Expression visitPtrToIntExpr(PtrToIntExprContext ctx) {
-        return intCastExpression(ctx.typeConst(), ctx.type(), true);
+        return castExpression(ctx.typeConst(), ctx.type(), true);
     }
 
     @Override
     public Expression visitIntToPtrExpr(IntToPtrExprContext ctx) {
-        return ptrCastExpression(ctx.typeConst(), ctx.type());
+        return castExpression(ctx.typeConst(), ctx.type(), true);
     }
 
     @Override
     public Expression visitBitCastExpr(BitCastExprContext ctx) {
-        final Type targetType = parseType(ctx.type());
-        if(targetType instanceof IntegerType){return intCastExpression(ctx.typeConst(), ctx.type(), true);}
-        if(targetType instanceof PointerType){return ptrCastExpression(ctx.typeConst(), ctx.type());}
-        throw new ParsingException("BitCast to unsupported type");
+        return castExpression(ctx.typeConst(), ctx.type(), true);
     }
 
     @Override
     public Expression visitAddrSpaceCastExpr(AddrSpaceCastExprContext ctx) {
-        return intCastExpression(ctx.typeConst(), ctx.type(), true);
+        return castExpression(ctx.typeConst(), ctx.type(), true);
     }
 
     @Override
@@ -1083,11 +1063,13 @@ public class VisitorLlvm extends LLVMIRBaseVisitor<Expression> {
         expectedType = null;
         return o;
     }
-    private Expression ptrCastExpression(TypeConstContext operand, TypeContext target) {
+
+    private Expression castExpression(TypeConstContext operand, TypeContext target, boolean signed) {
         final Expression operandExpression = visitTypeConst(operand);
         final Type targetType = parseType(target);
-        checkSupport(targetType instanceof PointerType, "Non-type type %s.", target);
-        return expressions.makePtrCast(operandExpression, (PointerType) targetType);
+        //checkSupport(targetType instanceof IntegerType, "Non-integer type %s.", target);
+        return expressions.makeCast(operandExpression, targetType, signed);
+        //return expressions.makeIntegerCast(operandExpression, (IntegerType) targetType, signed);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

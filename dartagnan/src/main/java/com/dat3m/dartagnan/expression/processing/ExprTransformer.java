@@ -13,12 +13,16 @@ import com.dat3m.dartagnan.expression.booleans.BoolUnaryExpr;
 import com.dat3m.dartagnan.expression.floats.FloatBinaryExpr;
 import com.dat3m.dartagnan.expression.floats.FloatCmpExpr;
 import com.dat3m.dartagnan.expression.floats.FloatUnaryExpr;
-import com.dat3m.dartagnan.expression.integers.*;
-import com.dat3m.dartagnan.expression.pointers.GEPExpr;
+import com.dat3m.dartagnan.expression.integers.IntBinaryExpr;
+import com.dat3m.dartagnan.expression.integers.IntCmpExpr;
+import com.dat3m.dartagnan.expression.integers.IntSizeCast;
+import com.dat3m.dartagnan.expression.integers.IntUnaryExpr;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.misc.ITEExpr;
 import com.dat3m.dartagnan.expression.pointers.IntToPtrCast;
-import com.dat3m.dartagnan.expression.pointers.PtrAddOffsetExpr;
+import com.dat3m.dartagnan.expression.pointers.PointerAddExpr;
 import com.dat3m.dartagnan.expression.pointers.PtrCmpExpr;
+import com.dat3m.dartagnan.expression.pointers.PtrToIntCast;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 
 import java.util.ArrayList;
@@ -46,14 +50,6 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
     @Override
     public Expression visitIntCmpExpression(IntCmpExpr cmp) {
         return expressions.makeIntCmp(cmp.getLeft().accept(this), cmp.getKind(), cmp.getRight().accept(this));
-    }
-    @Override
-    public Expression visitPtrToIntCastExpression(PtrToIntCast expr) {
-        return expressions.makeIntegerCast(expr.getOperand().accept(this), expr.getTargetType(), false);
-    }
-    @Override
-    public Expression visitIntToPtrCastExpression(IntToPtrCast expr) {
-        return expressions.makePtrCast(expr.getOperand().accept(this), expr.getTargetType());
     }
 
     @Override
@@ -127,15 +123,36 @@ public abstract class ExprTransformer implements ExpressionVisitor<Expression> {
         }
         return expressions.makeGetElementPointer(gep.getIndexingType(), base, offsets);
     }
-        // TODO implement recursive decent
+
+    @Override
+    public Expression visitPointerAddExpression(PointerAddExpr expr) {
+        return expressions.makePtrAdd(
+                expr.getBase().accept(this),
+                expr.getOffset().accept(this)
+        );
+    }
+
+    @Override
+    public Expression visitPtrCmpExpression(PtrCmpExpr expr) {
+        return expressions.makePtrCmp(
+                expr.getLeft().accept(this),
+                expr.getKind(),
+                expr.getRight().accept(this)
+        );
+    }
+
+    @Override
+    public Expression visitPtrToIntCastExpression(PtrToIntCast expr) {
+        return expressions.makePtrToIntCast(expr.getOperand().accept(this));
+    }
+
+    @Override
+    public Expression visitIntToPtrCastExpression(IntToPtrCast expr) {
+        return expressions.makeIntToPtrCast(expr.getOperand().accept(this));
+    }
+
     @Override
     public Expression visitLeafExpression(LeafExpression expr) {
         return expr;
     }
-    @Override
-    public Expression visitPtrAddOffsetExpression(PtrAddOffsetExpr expr){
-        return expressions.makePtrAddOffset(expr.getBasePointerVal().accept(this), expr.getAddedOffset().accept(this));
-    }
-    @Override
-    public Expression visitPtrCmpExpression(PtrCmpExpr expr){return expressions.makePtrCmp(expr.getLeft().accept(this), expr.getKind(), expr.getRight().accept(this));}
 }

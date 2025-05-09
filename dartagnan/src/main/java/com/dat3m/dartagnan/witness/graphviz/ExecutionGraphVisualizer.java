@@ -1,22 +1,16 @@
 package com.dat3m.dartagnan.witness.graphviz;
 
-import com.dat3m.dartagnan.encoding.formulas.TupleValue;
+import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.event.metadata.MemoryOrder;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
-import com.dat3m.dartagnan.verification.model.event.*;
-import com.dat3m.dartagnan.verification.model.ExecutionModelNext;
-import com.dat3m.dartagnan.verification.model.MemoryObjectModel;
-import com.dat3m.dartagnan.verification.model.RelationModel;
+import com.dat3m.dartagnan.verification.model.*;
 import com.dat3m.dartagnan.verification.model.RelationModel.EdgeModel;
-import com.dat3m.dartagnan.verification.model.ThreadModel;
-import com.dat3m.dartagnan.verification.model.ValueModel;
+import com.dat3m.dartagnan.verification.model.event.*;
 import com.dat3m.dartagnan.wmm.definition.Coherence;
 import com.dat3m.dartagnan.wmm.definition.ProgramOrder;
 import com.dat3m.dartagnan.wmm.definition.ReadFrom;
-import com.dat3m.dartagnan.wmm.Relation;
-import com.dat3m.dartagnan.wmm.utils.Tuple;
 import com.google.common.collect.Lists;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +26,6 @@ import java.io.Writer;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.WITNESS_SHOW;
 import static com.dat3m.dartagnan.program.analysis.SyntacticContextAnalysis.*;
@@ -78,7 +71,7 @@ public class ExecutionGraphVisualizer {
     }
 
     public void generateGraphOfExecutionModel(Writer writer, String graphName, ExecutionModelNext model) throws IOException {
-        // computeAddressMap(model);
+        computeAddressMap(model);
         graphviz.beginDigraph(graphName);
         graphviz.append(String.format("label=\"%s\" \n", graphName));
         addEvents(model);
@@ -96,11 +89,11 @@ public class ExecutionGraphVisualizer {
         return (x, y) -> true;
     }
 
-//    private void computeAddressMap(ExecutionModelNext model) {
-//        model.getMemoryLayoutMap().entrySet().stream()
-//             .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().getValue()))
-//             .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
-//    }
+    private void computeAddressMap(ExecutionModelNext model) {
+        model.getMemoryLayoutMap().entrySet().stream()
+             .sorted(Comparator.comparing(entry -> (BigInteger) entry.getValue().address().value()))
+             .forEach(entry -> sortedMemoryObjects.add(entry.getValue()));
+    }
 
     private List<EventModel> getEventModelsToShow(ThreadModel tm) {
         return tm.getEventModels()
@@ -268,30 +261,25 @@ public class ExecutionGraphVisualizer {
         return this;
     }
 
-//    private String getAddressString(ValueModel address) {
-//        final BigInteger addrValue = (BigInteger) address.getValue();
-//        final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
-//                .filter(o -> ((BigInteger) o.address().getValue()).compareTo(addrValue) <= 0)
-//                .findFirst().orElse(null);
-//
-//        if (accObj == null) {
-//            return addrValue + " [OOB]";
-//        } else {
-//            final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().getValue()).add(accObj.size())) >= 0;
-//            final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().getValue());
-//            return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
-//                    !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
-//                    isOOB ? " [OOB]" : ""
-//            );
-//        }
-//    }
-
     private String getAddressString(ValueModel address) {
-        final String addr = address.getValue().toString();
-        if (Objects.equals(addr, "")) {
-            return "[OOB]";
-        } else {
-            return "ptr" + addr;
+        if (address.value() instanceof BigInteger addrValue) {
+            final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
+                    .filter(o -> ((BigInteger) o.address().value()).compareTo(addrValue) <= 0)
+                    .findFirst().orElse(null);
+
+            if (accObj == null) {
+                return addrValue + " [OOB]";
+            } else {
+                final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().value()).add(accObj.size())) >= 0;
+                final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().value());
+                return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
+                        !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
+                        isOOB ? " [OOB]" : ""
+                );
+            }
+        }
+        else{
+            return address.value().toString();
         }
     }
 
@@ -320,11 +308,14 @@ public class ExecutionGraphVisualizer {
         } else if (e instanceof AssertModel am) {
             tag = String.format("Assertion(%s)", am.getResult());
         }
+        final Thread thread = e.getThreadModel().getThread();
         final String callStack = makeContextString(
             synContext.getContextInfo(e.getEvent()).getContextOfType(CallContext.class), " -> \\n");
-        final String nodeString = String.format("%s:T%s/E%s\\n%s%s\n%s",
+        final String scope = thread.hasScope() ? "@" + thread.getScopeHierarchy() : "";
+        final String nodeString = String.format("%s:T%s%s\\nE%s %s%s\n%s",
                 e.getThreadModel().getName(),
                 e.getThreadModel().getId(),
+                scope,
                 e.getEvent().getGlobalId(),
                 callStack.isEmpty() ? callStack : callStack + " -> \\n",
                 getSourceLocationString(e.getEvent()),

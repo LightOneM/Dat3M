@@ -39,8 +39,8 @@ public class CProgressTest extends AbstractCTest {
     }
 
     @Override
-    protected Provider<ProgressModel> getProgressModelProvider() {
-        return () -> progressModel;
+    protected Provider<ProgressModel.Hierarchy> getProgressModelProvider() {
+        return () -> uniform(progressModel);
     }
 
     @Override
@@ -94,7 +94,7 @@ public class CProgressTest extends AbstractCTest {
         assertEquals(expected, s.getResult());
     }
 
-    //@Test
+    @Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
         assertEquals(expected, s.getResult());

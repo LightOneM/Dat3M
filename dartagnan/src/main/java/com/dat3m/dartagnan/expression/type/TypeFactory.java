@@ -11,27 +11,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import com.dat3m.dartagnan.expression.Type;
-import com.dat3m.dartagnan.utils.Normalizer;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import com.google.common.math.IntMath;
 
 public final class TypeFactory {
 
     private static final TypeFactory instance = new TypeFactory();
 
     private final VoidType voidType = new VoidType();
-    private final BooleanType booleanType = new BooleanType();
-    private final IntegerType archType ;
     private final PointerType pointerType = new PointerType();
+    private final BooleanType booleanType = new BooleanType();
+    private final IntegerType pointerDifferenceType;
+
     private final Normalizer typeNormalizer = new Normalizer();
 
     private TypeFactory() {
-        archType = getIntegerType(64);
+        pointerDifferenceType = getIntegerType(64);//TODO insert proper pointer and difference types
     }
 
 
+    //TODO make this part of the program.
     public static TypeFactory getInstance() {
         return instance;
     }
@@ -47,7 +46,7 @@ public final class TypeFactory {
     }
 
     public IntegerType getIntegerType(int bitWidth) {
-        checkArgument(bitWidth > 0, "Non-positive integer bit width %s.", bitWidth);
+        checkArgument(bitWidth > 0, "Non-positive bit width %s.", bitWidth);
         return typeNormalizer.normalize(new IntegerType(bitWidth));
     }
 
@@ -120,9 +119,8 @@ public final class TypeFactory {
     }
 
     public IntegerType getArchType() {
-        return getIntegerType(64); // TODO ask about this
+        return pointerDifferenceType;
     }
-
 
     public IntegerType getByteType() {
         return getIntegerType(8);
@@ -139,8 +137,8 @@ public final class TypeFactory {
         if (type instanceof IntegerType integerType) {
             return IntMath.divide(integerType.getBitWidth(), 8, RoundingMode.CEILING);
         }
-        if (type instanceof PointerType) {
-            return getMemorySizeInBytes(archType);
+        if (type instanceof PointerType pointerType) {
+            return getMemorySizeInBytes(getArchType());
         }
         if (type instanceof FloatType floatType) {
             return IntMath.divide(floatType.getBitWidth(), 8, RoundingMode.CEILING);
@@ -171,7 +169,8 @@ public final class TypeFactory {
     }
 
     public int getAlignment(Type type) {
-        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType || type instanceof PointerType) {
+        if (type instanceof BooleanType || type instanceof IntegerType || type instanceof FloatType
+            || type instanceof PointerType) {
             return getMemorySizeInBytes(type);
         }
         if (type instanceof ArrayType arrayType) {

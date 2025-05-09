@@ -5,9 +5,12 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
-import com.dat3m.dartagnan.expression.pointers.GEPExpr;
+import com.dat3m.dartagnan.expression.misc.GEPExpr;
 import com.dat3m.dartagnan.expression.processing.ExprTransformer;
-import com.dat3m.dartagnan.expression.type.*;
+import com.dat3m.dartagnan.expression.type.AggregateType;
+import com.dat3m.dartagnan.expression.type.ArrayType;
+import com.dat3m.dartagnan.expression.type.IntegerType;
+import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.event.RegReader;
@@ -65,42 +68,42 @@ public class GEPToAddition implements ProgramProcessor {
 
         private final TypeFactory types = TypeFactory.getInstance();
         private final ExpressionFactory expressions = ExpressionFactory.getInstance();
-        private final IntegerType archType = types.getArchType();
 
-        @Override //TODO fix the calculations order and gen pointer type
-        public Expression visitGEPExpression(GEPExpr getElementPointer) {
-            Type type = getElementPointer.getIndexingType();
-            Expression result = getElementPointer.getBase().accept(this);
-            final List<Expression> offsets = getElementPointer.getOffsets();
+        @Override
+        public Expression visitGEPExpression(GEPExpr gep) {
+            final List<Expression> indices = gep.getOffsets();
+            final IntegerType offsetType = (IntegerType) indices.get(0).getType();
 
-            assert !offsets.isEmpty();
-            Expression offset =
-                    expressions.makeMul(
-                            expressions.makeValue(types.getMemorySizeInBytes(type), archType),
-                            expressions.makeIntegerCast(offsets.get(0).accept(this), archType, true));
+            Type indexingType = gep.getIndexingType();
+            Expression totalOffset = expressions.makeMul(
+                    expressions.makeValue(types.getMemorySizeInBytes(indexingType), offsetType),
+                    indices.get(0)
+            );
+            for (Expression index : indices.subList(1, indices.size())) {
+                Expression offset;
+                if (indexingType instanceof AggregateType aggType && index instanceof IntLiteral lit) {
+                    final int intIndex = lit.getValueAsInt();
+                    final int intOffset = types.getOffsetInBytes(aggType, intIndex);
 
-            for (final Expression oldOffset : offsets.subList(1, offsets.size())) {
-                final Expression _offset = oldOffset.accept(this);
-                if (type instanceof ArrayType arrayType) {
-                    type = arrayType.getElementType();
-                    offset = expressions.makeAdd(offset,
-                            expressions.makeMul(
-                                    expressions.makeValue(types.getMemorySizeInBytes(arrayType.getElementType()), archType),
-                                    expressions.makeIntegerCast(_offset, archType, true)));
-                    continue;
+                    offset = expressions.makeValue(intOffset, offsetType);
+                    indexingType = aggType.getFields().get(intIndex).type();
+                } else if (indexingType instanceof ArrayType arrayType) {
+                    final int elementSize = types.getMemorySizeInBytes(arrayType.getElementType());
+                    final Expression scaling = expressions.makeValue(elementSize, offsetType);
+                    final Expression castIndex = expressions.makeCast(index, offsetType, true);
+
+                    offset = expressions.makeMul(scaling, castIndex);
+                    indexingType = arrayType.getElementType();
+                } else {
+                    final String error = String.format("Invalid GEP indexing: Type %s, index %s", indexingType, index);
+                    throw new MalformedProgramException(error);
                 }
-                if (!(type instanceof AggregateType aggregateType)) {
-                    throw new MalformedProgramException(String.format("GEP from non-compound type %s.", type));
-                }
-                if (!(_offset instanceof IntLiteral constant)) {
-                    throw new MalformedProgramException(
-                            String.format("Non-constant field index %s for aggregate of type %s.", offset, type));
-                }
-                final TypeOffset typeOffset = TypeOffset.of(aggregateType, constant.getValueAsInt());
-                type = typeOffset.type();
-                offset = expressions.makeAdd(offset, expressions.makeValue(typeOffset.offset(), archType));
+                totalOffset = expressions.makeAdd(totalOffset, offset);
             }
-            return expressions.makePtrAddOffset(result, offset);
+
+            final Expression base = gep.getBase().accept(this);
+            final Expression castOffset = expressions.makeCast(totalOffset, types.getArchType(), true);
+            return expressions.makePtrAdd(base, castOffset);
         }
     }
 }

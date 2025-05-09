@@ -6,7 +6,6 @@ import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.integers.IntLiteral;
 import com.dat3m.dartagnan.expression.type.IntegerType;
-import com.dat3m.dartagnan.expression.type.PointerType;
 import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.parsers.LitmusCBaseVisitor;
 import com.dat3m.dartagnan.parsers.LitmusCParser;
@@ -30,7 +29,6 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
     private final ProgramBuilder programBuilder = ProgramBuilder.forLanguage(Program.SourceLanguage.LITMUS);
     private final ExpressionFactory expressions = programBuilder.getExpressionFactory();
     private final IntegerType archType = programBuilder.getTypeFactory().getArchType();
-    private final PointerType pointerType = programBuilder.getTypeFactory().getPointerType();
     private final int archSize = TypeFactory.getInstance().getMemorySizeInBytes(archType);
     private int currentThread;
     private int scope;
@@ -163,9 +161,10 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         scope = currentThread = ctx.threadId().id;
         threadIds.add(currentThread);
         if (isOpenCL && ctx.threadScope() != null) {
+            int sgID = 0; // Use subgroup ID 0 as default for OpenCL Litmus
             int wgID = ctx.threadScope().scopeID(0).id;
             int devID = ctx.threadScope().scopeID(1).id;
-            programBuilder.newScopedThread(Arch.OPENCL, currentThread, devID, wgID);
+            programBuilder.newScopedThread(Arch.OPENCL, currentThread, devID, wgID, sgID);
         } else {
             programBuilder.newThread(currentThread);
         }
@@ -197,7 +196,7 @@ public class VisitorLitmusC extends LitmusCBaseVisitor<Object> {
         //  For now, herd7 also seems to ignore most modifiers, in particular the atomic one.
         String name = ctx.varName().getText();
         MemoryObject object = programBuilder.getOrNewMemoryObject(name);
-        Register register = programBuilder.getOrNewRegister(scope, name, pointerType);
+        Register register = programBuilder.getOrNewRegister(scope, name, archType);
         boolean atomicity = ctx.pointerTypeSpecifier().atomicTypeSpecifier() != null
                 || ctx.pointerTypeSpecifier().basicTypeSpecifier().AtomicInt() != null;
         if (!atomicity) {

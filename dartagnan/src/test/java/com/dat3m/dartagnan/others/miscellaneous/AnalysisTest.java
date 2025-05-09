@@ -101,7 +101,7 @@ public class AnalysisTest {
         Configuration config = Configuration.builder().setOption(REACHING_DEFINITIONS_METHOD, method.name()).build();
         Context context = Context.create();
         context.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, config));
-        context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, context, config));
+        context.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.uniform(ProgressModel.FAIR), context, config));
         final ReachingDefinitionsAnalysis rd = ReachingDefinitionsAnalysis.fromConfig(program, context, config);
         var me0 = (RegReader) findMatchingEventAfterProcessing(program, e0);
         var me1 = (RegReader) findMatchingEventAfterProcessing(program, e1);
@@ -128,7 +128,7 @@ public class AnalysisTest {
     @Test
     public void reachingDefinitionSupportsLoops() throws InvalidConfigurationException {
         ProgramBuilder b = ProgramBuilder.forLanguage(SourceLanguage.LITMUS);
-        b.newFunction("ptr", 0, types.getFunctionType(types.getArchType(), List.of()), List.of());
+        b.newFunction("test", 0, types.getFunctionType(types.getArchType(), List.of()), List.of());
         Register r0 = b.getOrNewRegister(0, "r0");
         Register r1 = b.getOrNewRegister(0, "r1");
         Register r2 = b.getOrNewRegister(0, "r2");
@@ -651,7 +651,7 @@ public class AnalysisTest {
         ProcessingManager.fromConfig(configuration).run(program);
         Context analysisContext = Context.create();
         analysisContext.register(BranchEquivalence.class, BranchEquivalence.fromConfig(program, configuration));
-        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.FAIR, analysisContext, configuration));
+        analysisContext.register(ExecutionAnalysis.class, ExecutionAnalysis.fromConfig(program, ProgressModel.uniform(ProgressModel.FAIR), analysisContext, configuration));
         analysisContext.register(ReachingDefinitionsAnalysis.class, ReachingDefinitionsAnalysis.fromConfig(program, analysisContext, configuration));
         return AliasAnalysis.fromConfig(program, analysisContext, configuration);
     }

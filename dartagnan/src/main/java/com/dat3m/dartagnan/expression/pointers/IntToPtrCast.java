@@ -9,12 +9,10 @@ import com.dat3m.dartagnan.expression.utils.ExpressionHelper;
 
 public final class IntToPtrCast extends CastExpressionBase<PointerType, IntegerType> {
 
-    public IntToPtrCast(PointerType targetType, Expression operand) {
-        super(targetType, operand);
+    public IntToPtrCast(PointerType pointerType, Expression operand) {
+        super(pointerType, operand);
         ExpressionHelper.checkExpectedType(operand, IntegerType.class);
     }
-    @Override
-    public String toString(){ return "IntToPtr(" + operand.toString() + ")"; }
 
     @Override
     public <T> T accept(ExpressionVisitor<T> visitor) {

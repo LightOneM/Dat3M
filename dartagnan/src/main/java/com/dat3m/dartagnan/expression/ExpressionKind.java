@@ -22,9 +22,7 @@ public interface ExpressionKind {
         CONSTRUCT,
         ITE,
         EXTRACT,
-        INSERT,
-        PTR_OFFSET,
-        NULL_PTR;
+        INSERT;
 
         @Override
         public String getSymbol() {

@@ -19,6 +19,8 @@ import com.dat3m.dartagnan.wmm.utils.graph.EventGraph;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.sosy_lab.java_smt.api.BooleanFormula;
 import org.sosy_lab.java_smt.api.BooleanFormulaManager;
 
@@ -109,9 +111,10 @@ import static com.dat3m.dartagnan.wmm.RelationNameRepository.RF;
  */
 public class NonTerminationEncoder {
 
+    private static final Logger logger = LogManager.getLogger(NonTerminationEncoder.class);
+
     private final EncodingContext context;
     private final VerificationTask task;
-
 
     private final List<Loop> allLoops = new ArrayList<>();
     private final Map<Event, NonterminationCase> nonterm2Case = new HashMap<>();
@@ -190,6 +193,7 @@ public class NonTerminationEncoder {
     // ================================================================================================
 
     public BooleanFormula encodeNontermination() {
+        logger.info("Encoding non-termination specification");
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final BooleanFormula nonTerminating = bmgr.and(
                 bmgr.or(encodeLoopsAreStuck(), encodeBarriersAreStuck()),
@@ -366,10 +370,7 @@ public class NonTerminationEncoder {
         BooleanFormula equality = bmgr.equivalence(context.execution(x), context.execution(y));
         if (x instanceof RegWriter e && y instanceof RegWriter f) {
             // TODO: This should be covered by StateSnapshot, i.e., we do not need to consider dead variables.
-            equality = bmgr.and(
-                    equality,
-                    context.equal(context.result(e), context.result(f))
-            );
+            equality = bmgr.and(equality, context.sameResult(e, f));
         }
         if (x instanceof StateSnapshot e && y instanceof StateSnapshot f) {
             if (e.getExpressions().size() != f.getExpressions().size()) {
@@ -378,17 +379,14 @@ public class NonTerminationEncoder {
                 for (int i = 0; i < e.getExpressions().size(); i++) {
                     final Expression exprE = e.getExpressions().get(i);
                     final Expression exprF = f.getExpressions().get(i);
-                    equality = bmgr.and(
-                            equality,
-                            context.equal(context.encodeExpressionAt(exprE, e), context.encodeExpressionAt(exprF, f))
-                    );
+                    equality = bmgr.and(equality, context.getExpressionEncoder().equalAt(exprE, e, exprF, f));
                 }
             }
         }
         if (x instanceof MemoryCoreEvent e && y instanceof MemoryCoreEvent f) {
-            equality = bmgr.and(equality, context.equal(context.address(e), context.address(f)));
+            equality = bmgr.and(equality, context.sameAddress(e, f));
             if (x instanceof Store || x instanceof Load) {
-                equality = bmgr.and(equality, context.equal(context.value(e), context.value(f)));
+                equality = bmgr.and(equality, context.sameValue(e, f));
             }
 
         }

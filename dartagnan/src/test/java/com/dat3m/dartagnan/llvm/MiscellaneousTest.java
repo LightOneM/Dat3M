@@ -50,8 +50,7 @@ public class MiscellaneousTest extends AbstractCTest {
         return Provider.fromSupplier(() -> {
             ConfigurationBuilder builder = Configuration.builder();
             if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz")) {
-                builder.setOption(OptionNames.USE_INTEGERS, "false");
-                builder.setOption(OptionNames.USE_BVPOINTERS, "true");
+                builder.setOption(OptionNames.USE_INTEGERS, "true");
             }
             if (name.equals("recursion")) {
                 builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
@@ -98,18 +97,21 @@ public class MiscellaneousTest extends AbstractCTest {
                 {"nondet_alloc_2", IMM, PASS, 1},
                 {"nondet_aligned_alloc", IMM, PASS, 1},
                 {"alignment", IMM, PASS, 1},
+                {"unknown_function", IMM, FAIL, 1},
         });
     }
 
     @Test
     public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        System.out.println("Result :" + s.getResult() + "<>" + expected);
         assertEquals(expected, s.getResult());
     }
 
-    //@Test
+    @Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        System.out.println("Result :" + s.getResult() + "<>" + expected);
         assertEquals(expected, s.getResult());
     }
 }
