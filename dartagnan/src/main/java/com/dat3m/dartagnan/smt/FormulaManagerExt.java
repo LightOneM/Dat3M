@@ -35,6 +35,10 @@ public class FormulaManagerExt {
         return fmgr.escape(varName);
     }
 
+    public String dumpFormula(BooleanFormula formula) {
+        return fmgr.dumpFormula(formula).toString();
+    }
+
     // ====================================================================================================
     // Utility
 

@@ -25,6 +25,7 @@ import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -76,13 +77,13 @@ public class ExpressionEncoder {
 
     @SuppressWarnings("unchecked")
     public TypedFormula<BooleanType, BooleanFormula> encodeBooleanAt(Expression expression, Event at) {
-        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
+        checkArgument(expression.getType() instanceof BooleanType);
         return (TypedFormula<BooleanType, BooleanFormula>) encodeAt(expression, at);
     }
 
     @SuppressWarnings("unchecked")
     public TypedFormula<BooleanType, BooleanFormula> encodeBooleanFinal(Expression expression) {
-        Preconditions.checkArgument(expression.getType() instanceof BooleanType);
+        checkArgument(expression.getType() instanceof BooleanType);
         return (TypedFormula<BooleanType, BooleanFormula>) encodeFinal(expression);
     }
 
@@ -189,7 +190,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<IntegerType, ?> encodeIntegerExpr(Expression expression) {
-            Preconditions.checkArgument(expression.getType() instanceof IntegerType);
+            checkArgument(expression.getType() instanceof IntegerType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof IntegerFormula || typedFormula.formula() instanceof BitvectorFormula;
@@ -198,7 +199,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<PointerType, ?> encodePointerExpr(Expression expression) {
-            Preconditions.checkArgument(expression.getType() instanceof PointerType);
+            checkArgument(expression.getType() instanceof PointerType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.type() == expression.getType();
             switch (context.provenance) {
@@ -214,7 +215,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<BooleanType, BooleanFormula> encodeBooleanExpr(Expression expression) {
-            Preconditions.checkArgument(expression.getType() instanceof BooleanType);
+            checkArgument(expression.getType() instanceof BooleanType);
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof BooleanFormula;
@@ -223,7 +224,7 @@ public class ExpressionEncoder {
 
         @SuppressWarnings("unchecked")
         public TypedFormula<?, TupleFormula> encodeAggregateExpr(Expression expression) {
-            Preconditions.checkArgument(ExpressionHelper.isAggregateLike(expression));
+            checkArgument(ExpressionHelper.isAggregateLike(expression));
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.getType() == expression.getType();
             assert typedFormula.formula() instanceof TupleFormula;
@@ -557,10 +558,9 @@ public class ExpressionEncoder {
                     assert baseTuple.getSize() == 2;
                     final TypedFormula<IntegerType, ?> baseOffset = wrap(offset.type(), fmgr.getTupleFormulaManager().extract(baseTuple, 1));
                     final TypedFormula<IntegerType, ?> newOffset = encodeIntegerExpr(context.getExpressionFactory().makeAdd(baseOffset, offset));
-
+                    Formula f = fmgr.getTupleFormulaManager().insert(baseTuple, newOffset.formula(), 1);
                     return new TypedFormula<>(
-                            base.getType(),
-                            fmgr.getTupleFormulaManager().insert(baseTuple, newOffset.formula(), 1)
+                            base.getType(),f
                     );
                 }
             }
@@ -679,5 +679,25 @@ public class ExpressionEncoder {
             final String name = String.format("last_val_at_%s_%d", base, offset);
             return makeVariable(name, val.getType());
         }
+
+        @Override
+        public TypedFormula<BooleanType,BooleanFormula> visitPointerValidationExpression(PointerValidation pv){
+            BooleanFormulaManager bfm = fmgr.getBooleanFormulaManager();
+            if (context.provenance != EncodingContext.ProvenanceModel.SIMPLE){return new TypedFormula<>(types.getBooleanType(),bfm.makeTrue());}
+            final TupleFormula ptr = (TupleFormula) encodePointerExpr(pv.getOperand()).formula();
+            BitvectorFormulaManager bvm = bitvectorFormulaManager();
+            BooleanFormula valid = bfm.makeFalse();
+            final Set<MemoryObject> memoryObjects = context.getTask().getProgram().getMemory().getObjects();
+            for (MemoryObject memoryObject : memoryObjects) {
+                final TupleFormula mem = (TupleFormula) encodePointerExpr(memoryObject).formula();
+                final BitvectorFormula size  = (BitvectorFormula) context.size(memoryObject).formula();
+                BooleanFormula condition = bfm.and(bvm.lessThan(ptr.offset(), size,false),bvm.equal(ptr.base(), mem.base()));
+                valid = bfm.or(valid, condition);
+            }
+            valid = bfm.and(valid,bvm.greaterOrEquals(ptr.offset(),bvm.makeBitvector(bvm.getLength(ptr.offset()), BigInteger.ZERO),false));
+            //System.out.println("<<<\n" + fmgr.dumpFormula(valid) + ">>>");
+            return new TypedFormula<>(types.getBooleanType(), valid);
+        }
+
     }
 }

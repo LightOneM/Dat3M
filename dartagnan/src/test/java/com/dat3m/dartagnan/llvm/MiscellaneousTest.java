@@ -104,12 +104,14 @@ public class MiscellaneousTest extends AbstractCTest {
     @Test
     public void testAssume() throws Exception {
         AssumeSolver s = AssumeSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        System.out.println("Result :" + s.getResult() + "<>" + expected);
         assertEquals(expected, s.getResult());
     }
 
     @Test
     public void testRefinement() throws Exception {
         RefinementSolver s = RefinementSolver.run(contextProvider.get(), proverProvider.get(), taskProvider.get());
+        System.out.println("Result :" + s.getResult() + "<>" + expected);
         assertEquals(expected, s.getResult());
     }
 }

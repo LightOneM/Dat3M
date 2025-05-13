@@ -44,3 +44,4 @@ Thumbs.db
 # Antlr Caches #
 ##########
 dartagnan/src/main/antlr4/.antlr/
+/setup

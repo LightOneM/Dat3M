@@ -10,4 +10,6 @@ public record ValueModel(Object value) {
     public String toString() {
         return String.valueOf(value);
     }
+
+    // public Object getInnerType(){return value.getClass();}
 }

@@ -1383,8 +1383,8 @@ public class Intrinsics {
         final List<Event> replacement = new ArrayList<>(2 * count + 1);
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression srcAddr = expressions.makeAdd(src, offset);
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression srcAddr = expressions.makePtrAdd(src, offset);
+            final Expression destAddr = expressions.makePtrAdd(dest, offset);
             // FIXME: We have no other choice but to load ptr-sized chunks for now
             final Register reg = caller.getOrNewRegister("__memcpy_" + i, types.getArchType());
 
@@ -1580,7 +1580,7 @@ public class Intrinsics {
         final List<Event> replacement = new ArrayList<>( count + 1);
         for (int i = 0; i < count; i++) {
             final Expression offset = expressions.makeValue(i, types.getArchType());
-            final Expression destAddr = expressions.makeAdd(dest, offset);
+            final Expression destAddr = expressions.makePtrAdd(dest, offset);
 
             replacement.add(EventFactory.newStore(destAddr, zero));
         }

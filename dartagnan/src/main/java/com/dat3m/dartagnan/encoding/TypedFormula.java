@@ -56,6 +56,7 @@ import org.sosy_lab.java_smt.api.Formula;
         Similarly, the metadata could even carry the original type from which M was constructed if it helps in any way.
         Metadata then needs to be preserved even over extract/concatenation operations.
  */
+
 public record TypedFormula<TType extends Type, TFormula extends Formula>(TType type, TFormula formula)
     implements LeafExpression {
 

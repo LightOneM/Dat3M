@@ -262,20 +262,24 @@ public class ExecutionGraphVisualizer {
     }
 
     private String getAddressString(ValueModel address) {
-        final BigInteger addrValue = (BigInteger) address.value();
-        final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
-                .filter(o -> ((BigInteger) o.address().value()).compareTo(addrValue) <= 0)
-                .findFirst().orElse(null);
+        if (address.value() instanceof BigInteger addrValue) {
+            final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
+                    .filter(o -> ((BigInteger) o.address().value()).compareTo(addrValue) <= 0)
+                    .findFirst().orElse(null);
 
-        if (accObj == null) {
-            return addrValue + " [OOB]";
-        } else {
-            final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().value()).add(accObj.size())) >= 0;
-            final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().value());
-            return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
-                    !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
-                    isOOB ? " [OOB]" : ""
-            );
+            if (accObj == null) {
+                return addrValue + " [OOB]";
+            } else {
+                final boolean isOOB = addrValue.compareTo(((BigInteger) accObj.address().value()).add(accObj.size())) >= 0;
+                final BigInteger offset = addrValue.subtract((BigInteger) accObj.address().value());
+                return String.format("%s[size=%s]%s%s", accObj.object(), accObj.size(),
+                        !offset.equals(BigInteger.ZERO) ? " + " + offset : "",
+                        isOOB ? " [OOB]" : ""
+                );
+            }
+        }
+        else{
+            return address.value().toString();
         }
     }
 

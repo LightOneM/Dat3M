@@ -56,10 +56,10 @@ public final class EncodingContext {
 
     public enum ProvenanceModel {
         NO,
-        SIMPLE
+        SIMPLE,
     }
 
-    ProvenanceModel provenance = ProvenanceModel.NO;
+    ProvenanceModel provenance = ProvenanceModel.SIMPLE;
 
     @Option(
             name=IDL_TO_SAT,

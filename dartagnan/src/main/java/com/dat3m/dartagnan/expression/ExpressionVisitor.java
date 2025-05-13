@@ -61,6 +61,7 @@ public interface ExpressionVisitor<TRet> {
     default TRet visitPtrToIntCastExpression(PtrToIntCast expr) { return visitCastExpression(expr); }
     default TRet visitPtrCmpExpression(PtrCmpExpr expr) { return visitBinaryExpression(expr); }
     default TRet visitNullLiteral(NullLiteral lit) { return visitLeafExpression(lit); }
+    default TRet visitPointerValidationExpression(PointerValidation pv) { return visitUnaryExpression(pv); }
 
     // =================================== Generic ===================================
     default TRet visitITEExpression(ITEExpr expr) { return visitExpression(expr); }

@@ -55,4 +55,5 @@ public class Load extends AbstractMemoryCoreEvent implements RegWriter {
     public <T> T accept(EventVisitor<T> visitor) {
         return visitor.visitLoad(this);
     }
+
 }

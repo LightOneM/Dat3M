@@ -70,8 +70,9 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
             secure = true)
-    private boolean printAfterProcessing = false;
+    private boolean printAfterProcessing = true;
 
+    private boolean printAfterInstrumentation = false;
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
@@ -115,6 +116,7 @@ public class ProcessingManager implements ProgramProcessor {
                                 removeDeadJumps
                         ), Target.FUNCTIONS, true
                 ),
+                // somewhat instrumentation does not complain here
                 ThreadCreation.fromConfig(config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,
@@ -139,10 +141,13 @@ public class ProcessingManager implements ProgramProcessor {
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,
+                Instrumentation.newInstance(),
+                printAfterInstrumentation ? DebugPrint.withHeader("After Instrumentation", Printer.Mode.ALL) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         CoreCodeVerification.fromConfig(config),
                         Target.THREADS, false
                 ),
+                IdReassignment.newInstance(),
                 LogThreadStatistics.newInstance()
         ));
         programProcessors.removeIf(Objects::isNull);

@@ -28,6 +28,10 @@ public final class TupleFormulaManager {
         return fmgr.equal(x, y);
     }
 
+    public TupleFormula newTupleFormula(List<Formula> formulas) {
+        return new TupleFormula(formulas);
+    }
+
     public Formula extract(TupleFormula f, int index) {
         Preconditions.checkArgument(0 <= index && index < f.elements.size());
         return f.elements.get(index);

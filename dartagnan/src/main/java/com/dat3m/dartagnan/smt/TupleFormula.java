@@ -1,6 +1,7 @@
 package com.dat3m.dartagnan.smt;
 
 import com.google.common.collect.ImmutableList;
+import org.sosy_lab.java_smt.api.BitvectorFormula;
 import org.sosy_lab.java_smt.api.Formula;
 
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
  */
 public class TupleFormula implements Formula {
 
-    final ImmutableList<Formula> elements;
+    public final ImmutableList<Formula> elements;
 
     TupleFormula(List<Formula> elements) {
         this.elements = ImmutableList.copyOf(elements);
@@ -45,4 +46,10 @@ public class TupleFormula implements Formula {
         }
     }
 
+    public BitvectorFormula base(){
+        return (BitvectorFormula) elements.get(0);
+    }
+    public BitvectorFormula offset(){
+        return (BitvectorFormula) elements.get(1);
+    }
 }

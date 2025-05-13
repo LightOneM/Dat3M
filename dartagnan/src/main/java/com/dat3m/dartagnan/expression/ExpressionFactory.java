@@ -474,4 +474,10 @@ public final class ExpressionFactory {
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));
     }
+
+    public Expression makePointerValidation(Expression pointer, BooleanType type){
+        return new PointerValidation(pointer,type);
+    }
+
+
 }
