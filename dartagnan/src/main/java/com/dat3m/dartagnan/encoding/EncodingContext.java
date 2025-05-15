@@ -59,7 +59,16 @@ public final class EncodingContext {
         SIMPLE,
     }
 
-    ProvenanceModel provenance = ProvenanceModel.SIMPLE;
+
+
+   @Option(
+           name = SIMPLE_PROVENANCE,
+           description = "Use the simple model of provenance.  Default: True .",
+           secure = true)
+    boolean simpleProvenance = true;
+
+   ProvenanceModel provenance = simpleProvenance ? ProvenanceModel.SIMPLE : ProvenanceModel.NO;
+
 
     @Option(
             name=IDL_TO_SAT,

@@ -31,6 +31,7 @@ public class OptionNames {
 
     // Encoding Options
     public static final String USE_INTEGERS = "encoding.integers";
+    public static final String SIMPLE_PROVENANCE = "encoding.provenance";
     public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
     public static final String REDUCE_ACYCLICITY_ENCODE_SETS = "encoding.wmm.reduceAcyclicityEncodeSets";
     public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
@@ -41,6 +42,7 @@ public class OptionNames {
     public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
 
     // Program Processing Options
+    public static final String INSTRUMENT = "program.processing.instrument";
     public static final String DETERMINISTIC_REORDERING = "program.processing.detReordering";
     public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";
     public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";
@@ -88,4 +90,6 @@ public class OptionNames {
     public static final String PRINT_PROGRAM_AFTER_UNROLLING = "printer.afterUnrolling";
     public static final String PRINT_PROGRAM_AFTER_COMPILATION = "printer.afterCompilation";
     public static final String PRINT_PROGRAM_AFTER_PROCESSING = "printer.afterProcessing";
+    public static final String PRINT_PROGRAM_AFTER_INSTRUMENTATION = "printer.afterInstrumentation";
+
 }

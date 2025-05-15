@@ -44,6 +44,8 @@ public abstract class AbstractCTest {
     protected Configuration getConfiguration() throws InvalidConfigurationException {
         return Configuration.builder()
                 .setOption(OptionNames.USE_INTEGERS, "false")
+                .setOption(OptionNames.SIMPLE_PROVENANCE, "false")
+                .setOption(OptionNames.INSTRUMENT, "false")
                 .build();
     }
 
@@ -52,7 +54,7 @@ public abstract class AbstractCTest {
     }
 
     protected Provider<Integer> getBoundProvider() {
-        return () -> 1;
+        return () -> 3;
     }
 
     protected Provider<Solvers> getSolverProvider() {

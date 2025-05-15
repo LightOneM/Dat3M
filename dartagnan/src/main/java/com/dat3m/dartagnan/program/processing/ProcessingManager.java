@@ -26,6 +26,11 @@ public class ProcessingManager implements ProgramProcessor {
             secure = true)
     private boolean reduceSymmetry = false;
 
+    @Option(name = INSTRUMENT,
+            description = "Instruments pointer validity tests. Default True",
+            secure = true)
+    private boolean instument = true;
+
     @Option(name = CONSTANT_PROPAGATION,
             description = "Performs constant propagation.",
             secure = true)
@@ -70,8 +75,10 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
             secure = true)
-    private boolean printAfterProcessing = true;
-
+    private boolean printAfterProcessing = false;
+    @Option(name = PRINT_PROGRAM_AFTER_INSTRUMENTATION,
+            description = "Prints the program after all processing.",
+            secure = true)
     private boolean printAfterInstrumentation = false;
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
@@ -141,13 +148,13 @@ public class ProcessingManager implements ProgramProcessor {
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,
-                Instrumentation.newInstance(),
+                instument?Instrumentation.newInstance():null,
                 printAfterInstrumentation ? DebugPrint.withHeader("After Instrumentation", Printer.Mode.ALL) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         CoreCodeVerification.fromConfig(config),
                         Target.THREADS, false
                 ),
-                IdReassignment.newInstance(),
+                instument ? IdReassignment.newInstance():null,
                 LogThreadStatistics.newInstance()
         ));
         programProcessors.removeIf(Objects::isNull);

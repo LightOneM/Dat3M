@@ -54,6 +54,8 @@ public class PointerTest extends AbstractCTest {
 //                {"wrd", TSO, PASS},
 //                {"wrd", POWER, PASS},
 //                {"wrd", RISCV, PASS},
+                {"realloc", ARM8, FAIL}, //does not matter because realloc is not defined yet
+                {"use_a_free", ARM8, FAIL},
 
         });
     }
