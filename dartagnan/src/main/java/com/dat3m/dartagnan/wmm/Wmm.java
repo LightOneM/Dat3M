@@ -190,6 +190,7 @@ public class Wmm {
         final Definition def = switch (name) {
             case PO -> new ProgramOrder(r, Filter.byTag(Tag.VISIBLE));
             case LOC -> new SameLocation(r);
+            case SOBJ -> new SameObject(r);
             case ID -> new SetIdentity(r, Filter.byTag(Tag.VISIBLE));
             case INT -> new Internal(r);
             case EXT -> new External(r);

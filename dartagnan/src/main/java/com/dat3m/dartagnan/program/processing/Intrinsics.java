@@ -217,9 +217,9 @@ public class Intrinsics {
         STD_MEMSET(List.of("memset", "__memset_chk"), true, false, true, false, Intrinsics::inlineMemSet),
         STD_MEMCMP("memcmp", false, true, true, false, Intrinsics::inlineMemCmp),
         STD_MALLOC("malloc", false, false, true, true, Intrinsics::inlineMalloc),
+        STD_FREE("free", false, false, true, true, Intrinsics::inlineFree),
         STD_CALLOC("calloc", false, false, true, true, Intrinsics::inlineCalloc),
         STD_ALIGNED_ALLOC("aligned_alloc", false, false, true, true, Intrinsics::inlineAlignedAlloc),
-        STD_FREE("free", true, false, true, true, Intrinsics::inlineAsZero),//TODO support free
         STD_ASSERT(List.of("__assert_fail", "__assert_rtn"), false, false, false, true, Intrinsics::inlineUserAssert),
         STD_EXIT("exit", false, false, false, true, Intrinsics::inlineExit),
         STD_ABORT("abort", false, false, false, true, Intrinsics::inlineExit),
@@ -287,6 +287,7 @@ public class Intrinsics {
             return variants.stream().anyMatch(v -> matchingFunction.test(funcName, v));
         }
     }
+
 
     @FunctionalInterface
     private interface Replacer {
@@ -890,6 +891,12 @@ public class Intrinsics {
         final Expression totalSize = call.getArguments().get(0);
         return List.of(
                 EventFactory.newAlloc(resultRegister, allocType, totalSize, true, false)
+        );
+    }
+    private List<Event> inlineFree(FunctionCall call) {
+        final Expression address = call.getArguments().get(0);
+        return List.of(
+                EventFactory.newFreeM(address)
         );
     }
 

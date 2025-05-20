@@ -128,6 +128,10 @@ public class EventFactory {
         return new Load(register, address);
     }
 
+    public static FreeM newFreeM(Expression address){
+        return new FreeM(address);
+    }
+
     public static Load newLoadWithMo(Register register, Expression address, String mo) {
         Load load = newLoad(register, address);
         load.setMemoryOrder(mo);

@@ -11,3 +11,11 @@ acyclic po | com as sc
 
 (* Atomicity *)
 empty rmw & (fre;coe)
+
+
+
+(* Use after free detection *)
+hb = po | com
+let sobj  (* set of sets *)
+let uaf = fun o -> flag !(empty (o & hb))
+forall o in sobj do uaf(o) end

@@ -24,3 +24,10 @@ let po-tso = ((po & ((R*M) | (W*W))) | mfence)
 let ghb-tso = po-tso | com-tso | implied
 
 acyclic ghb-tso as tso
+
+
+(* Use after free detection *)
+let hb = po-tso | com-tso (* this is wrong, test only*)
+let hb_after_free = [FREE];hb;[M]
+let use_after_free = hb_after_free & sobj
+flag ~empty (use_after_free)

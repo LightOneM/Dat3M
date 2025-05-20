@@ -38,6 +38,10 @@ public final class Tag {
     public static final String NOOPT            = "__NOOPT";
     public static final String STARTLOAD        = "__STARTLOAD";
 
+
+    // Added for use after free
+    public static final String FREE              = "__MFR";
+
     // =============================================================================================
     // =========================================== ARMv8 ===========================================
     // =============================================================================================

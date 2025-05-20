@@ -11,6 +11,7 @@ import com.dat3m.dartagnan.program.event.core.MemoryCoreEvent;
 import com.dat3m.dartagnan.program.event.core.NamedBarrier;
 import com.dat3m.dartagnan.program.event.core.RMWStoreExclusive;
 import com.dat3m.dartagnan.smt.ModelExt;
+import com.dat3m.dartagnan.smt.TupleFormula;
 import com.dat3m.dartagnan.utils.Utils;
 import com.dat3m.dartagnan.utils.dependable.DependencyGraph;
 import com.dat3m.dartagnan.wmm.Constraint;
@@ -32,10 +33,7 @@ import org.apache.logging.log4j.Logger;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
-import org.sosy_lab.java_smt.api.BooleanFormula;
-import org.sosy_lab.java_smt.api.BooleanFormulaManager;
-import org.sosy_lab.java_smt.api.IntegerFormulaManager;
-import org.sosy_lab.java_smt.api.NumeralFormula;
+import org.sosy_lab.java_smt.api.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -229,6 +227,7 @@ public class WmmEncoder implements Encoder {
         final Program program = context.getTask().getProgram();
         final RelationAnalysis ra = context.getAnalysisContext().requires(RelationAnalysis.class);
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
+        final BitvectorFormulaManager bvmg = context.getFormulaManager().getBitvectorFormulaManager();
         final List<BooleanFormula> enc = new ArrayList<>();
 
         @Override
@@ -567,6 +566,20 @@ public class WmmEncoder implements Encoder {
                             context.sameAddress((MemoryCoreEvent) e1, (MemoryCoreEvent) e2)))));
             return null;
         }
+
+        @Override
+        public Void visitSameObject(SameObject locDef) {
+            final Relation loc = locDef.getDefinedRelation();
+            EncodingContext.EdgeEncoder edge = context.edge(loc);
+            encodeSets.get(loc).apply((e1, e2) -> enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(execution(e1, e2), isSameBase((MemoryCoreEvent) e1, (MemoryCoreEvent) e2)))));
+            return null;
+        }
+
+        private BooleanFormula isSameBase(MemoryCoreEvent e1, MemoryCoreEvent e2) { //TODO inline after testing
+            return bvmg.equal(((TupleFormula) context.address(e1).formula()).base(),((TupleFormula) context.address(e2).formula()).base());
+        }
+
+
 
         @Override
         public Void visitReadFrom(ReadFrom rfDef) {

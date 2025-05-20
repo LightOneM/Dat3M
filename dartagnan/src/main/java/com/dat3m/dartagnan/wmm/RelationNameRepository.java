@@ -8,6 +8,7 @@ public class RelationNameRepository {
 
     public static final String PO = "po";
     public static final String LOC = "loc";
+    public static final String SOBJ = "sobj";  // same pointer base
     public static final String ID = "id";
     public static final String INT = "int";
     public static final String EXT = "ext";

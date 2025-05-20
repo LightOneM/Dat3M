@@ -84,6 +84,7 @@ public interface Constraint {
         default T visitReadModifyWrites(ReadModifyWrites rmw) { return visitDefinition(rmw); }
         default T visitCoherence(Coherence co) { return visitDefinition(co); }
         default T visitSameLocation(SameLocation loc) { return visitDefinition(loc); }
+        default T visitSameObject(SameObject loc) { return visitDefinition(loc); }
         default T visitReadFrom(ReadFrom rf) { return visitDefinition(rf); }
         // --- Target-specific definitions
         default T visitCASDependency(CASDependency casDep) { return visitDefinition(casDep); } // IMM

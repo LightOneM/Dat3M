@@ -909,6 +909,18 @@ public class NativeRelationAnalysis implements RelationAnalysis {
             return new MutableKnowledge(may, must);
         }
 
+        @Override
+        public MutableKnowledge visitSameObject(SameObject obj) {
+            MutableEventGraph may = new MapEventGraph();
+            List<MemoryCoreEvent> events = program.getThreadEvents(MemoryCoreEvent.class);
+            // TODO refine upper and lower bounds
+            for (MemoryCoreEvent e1 : events) {for (MemoryCoreEvent e2 : events) {may.add(e1, e2);}}
+            MutableEventGraph must = new MapEventGraph();
+            return new MutableKnowledge(may, must);
+        }
+
+
+
         private MutableKnowledge computeInternalDependencies(Set<UsageType> usageTypes) {
             MutableEventGraph may = new MapEventGraph();
             MutableEventGraph must = new MapEventGraph();
