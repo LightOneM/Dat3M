@@ -133,7 +133,7 @@ fi
 
 # we select program_spec property by default
 if [ -z "${property}" ]; then
-    property="program_spec"
+    property="cat_spec"
 fi
 
 if [ -z "${bound}" ]; then

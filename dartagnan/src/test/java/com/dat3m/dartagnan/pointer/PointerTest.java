@@ -1,6 +1,7 @@
-package com.dat3m.dartagnan.llvm;
+package com.dat3m.dartagnan.pointer;
 
 import com.dat3m.dartagnan.configuration.Arch;
+import com.dat3m.dartagnan.llvm.AbstractCTest;
 import com.dat3m.dartagnan.utils.Result;
 import com.dat3m.dartagnan.utils.rules.Provider;
 import com.dat3m.dartagnan.verification.solving.AssumeSolver;

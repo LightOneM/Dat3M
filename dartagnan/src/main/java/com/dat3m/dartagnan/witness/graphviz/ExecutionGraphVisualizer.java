@@ -262,7 +262,6 @@ public class ExecutionGraphVisualizer {
     }
 
     private String getAddressString(ValueModel address) {
-        System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"):
         if (address.value() instanceof BigInteger addrValue) {
             final MemoryObjectModel accObj = Lists.reverse(sortedMemoryObjects).stream()
                     .filter(o -> ((BigInteger) o.address().value()).compareTo(addrValue) <= 0)

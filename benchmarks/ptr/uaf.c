@@ -1,11 +1,9 @@
-// use after free simple
-
 #include <stdlib.h>
-
+#include <assert.h>
 int main(void) {
     int *ptr = malloc(sizeof(int));
-    *ptr = 42;
+    *ptr = 1;
     free(ptr);
-    *ptr = 10;
+    *ptr = 2;
     return 0;
 }

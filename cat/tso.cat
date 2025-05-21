@@ -27,7 +27,7 @@ acyclic ghb-tso as tso
 
 
 (* Use after free detection *)
-let hb = po-tso | com-tso (* this is wrong, test only*)
-let hb_after_free = [FREE];hb;[M]
+let hb = po | com (* this is wrong for tso, test only*)
+let hb_after_free = [MFR];hb+;[M]
 let use_after_free = hb_after_free & sobj
 flag ~empty (use_after_free)

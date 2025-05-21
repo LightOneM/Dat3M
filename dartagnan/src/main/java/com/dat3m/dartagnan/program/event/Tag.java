@@ -40,7 +40,7 @@ public final class Tag {
 
 
     // Added for use after free
-    public static final String FREE              = "__MFR";
+    public static final String FREE              = "MFR";
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================

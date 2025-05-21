@@ -121,7 +121,9 @@ public class ExecutionModelManager {
             } else if (memEvent instanceof Store store) {
                 em = new StoreModel(store, tm, id, address, value);
                 executionModel.addAddressWrite(address, (StoreModel) em);
-            } else {
+            // } else if (memEvent instanceof FreeM free) {
+                // TODO add support to the execution visualiser
+            }else{
                 // Should never happen.
                 throw new IllegalArgumentException(String.format(
                     "Event %s is memory event but neither read nor write", memEvent

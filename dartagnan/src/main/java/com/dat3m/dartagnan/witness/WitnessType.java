@@ -6,7 +6,7 @@ public enum WitnessType implements OptionInterface {
     NONE, GRAPHML, DOT, PNG;
 
     public static WitnessType getDefault() {
-        return PNG;
+        return NONE;
     }
 
     public boolean generateGraphviz() {
