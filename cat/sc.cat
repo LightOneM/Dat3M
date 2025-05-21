@@ -15,7 +15,7 @@ empty rmw & (fre;coe)
 
 
 (* Use after free detection *)
-hb = po | com
-let sobj  (* set of sets *)
-let uaf = fun o -> flag !(empty (o & hb))
-forall o in sobj do uaf(o) end
+let hb = po | com
+let hb_after_free = [MFR];hb+;[M]
+let use_after_free = hb_after_free & sobj
+flag ~empty (use_after_free)

@@ -65,3 +65,8 @@ let prop = propbase & (W * W) | (chapo?; propbase*; strong; hb*)
 
 acyclic co | prop as propagation
 irreflexive fre; prop; hb* as observation
+
+(* Use after free detection *)
+let hb_after_free = [MFR];hb+;[M]
+let use_after_free = hb_after_free & sobj
+flag ~empty (use_after_free)
