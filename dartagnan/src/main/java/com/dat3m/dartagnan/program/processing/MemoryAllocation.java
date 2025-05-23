@@ -9,12 +9,15 @@ import com.dat3m.dartagnan.expression.type.TypeFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
+import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.EventFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.event.core.Alloc;
+import com.dat3m.dartagnan.program.event.core.AllocM;
 import com.dat3m.dartagnan.program.event.core.Init;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.google.common.base.Preconditions;
+import org.checkerframework.checker.units.qual.A;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -75,6 +78,20 @@ public class MemoryAllocation implements ProgramProcessor {
                 }
             }
         }
+        for(Thread thread : program.getThreads()) {
+            for (int i = 0; i < thread.getEvents().size();i++){
+                Event e = thread.getEvents().get(i);
+                if( e instanceof Alloc){
+                    if(((Alloc) e).isHeapAllocation()){
+                        Event ins = new AllocM(((Alloc) e).getResultRegister());
+                        e.insertAfter(ins);
+                    }
+                }
+            }
+        }
+
+
+
     }
 
     private void createInitEvents(Program program) {

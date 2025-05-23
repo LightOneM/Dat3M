@@ -51,24 +51,38 @@ public final class EncodingContext {
     private final FormulaManagerExt formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
     private final ExpressionEncoder exprEncoder;
-
+    public final  ProvenanceModel provenance; // TODO make it private
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
 
     public enum ProvenanceModel {
         NO,
         SIMPLE,
+        PLAIN,
+
     }
 
 
 
    @Option(
-           name = SIMPLE_PROVENANCE,
+           name = PROVENANCE_MODEL,
            description = "Use the simple model of provenance.  Default: True .",
            secure = true)
-    boolean simpleProvenance = true;
+    String provenanceModelVal = "plain";
 
-   ProvenanceModel provenance = simpleProvenance ? ProvenanceModel.SIMPLE : ProvenanceModel.NO;
 
+
+
+
+    private static ProvenanceModel parseProvenanceModel(String val) {
+        switch (val.toLowerCase()) {
+            case "simple":
+                return ProvenanceModel.SIMPLE;
+            case "plain":
+                return ProvenanceModel.PLAIN;
+            default:
+                return ProvenanceModel.NO;
+        }
+    }
 
     @Option(
             name=IDL_TO_SAT,
@@ -99,6 +113,7 @@ public final class EncodingContext {
     private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
+        this.provenance = parseProvenanceModel(provenanceModelVal);
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
         a.requires(BranchEquivalence.class);

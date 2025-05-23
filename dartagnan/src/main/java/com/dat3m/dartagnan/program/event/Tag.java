@@ -41,6 +41,8 @@ public final class Tag {
 
     // Added for use after free
     public static final String FREE              = "MFR";
+    public static final String ALLOC             = "MAL";
+
 
     // =============================================================================================
     // =========================================== ARMv8 ===========================================

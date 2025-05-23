@@ -582,6 +582,7 @@ public class ExpressionEncoder {
                             wrap(expr.getType(), fmgr.getTupleFormulaManager().extract(ptrTuple, 1))
                     ));
                 }
+                case PLAIN -> encodeIntegerExpr(wrap(expr.getType(), fmgr.getTupleFormulaManager().extract((TupleFormula)ptr.formula(), 1)));// FIXME maybe?
             };
         }
 
@@ -613,6 +614,7 @@ public class ExpressionEncoder {
 
                     yield encodePointerExpr(cases);
                 }
+                case PLAIN -> 
             };
         }
 
@@ -666,6 +668,10 @@ public class ExpressionEncoder {
                         makeVariable(String.format("baseof(%s)", memObj), types.getArchType()).formula(),
                         encodeIntegerExpr(context.getExpressionFactory().makeZero(types.getArchType())).formula()
                 );
+                case PLAIN -> {
+                    Formula b = makeVariable(String.format("baseof(%s)", memObj), types.getArchType()).formula();
+                    yield fmgr.getTupleFormulaManager().makeTuple(List.of(b,b));
+                }
             };
             return new TypedFormula<>(memObj.getType(), result);
         }
@@ -683,7 +689,7 @@ public class ExpressionEncoder {
         @Override
         public TypedFormula<BooleanType,BooleanFormula> visitPointerValidationExpression(PointerValidation pv){
             BooleanFormulaManager bfm = fmgr.getBooleanFormulaManager();
-            if (context.provenance != EncodingContext.ProvenanceModel.SIMPLE){return new TypedFormula<>(types.getBooleanType(),bfm.makeTrue());}
+            if (context.provenance == EncodingContext.ProvenanceModel.NO){return new TypedFormula<>(types.getBooleanType(),bfm.makeTrue());}
             final TupleFormula ptr = (TupleFormula) encodePointerExpr(pv.getOperand()).formula();
             BitvectorFormulaManager bvm = bitvectorFormulaManager();
             BooleanFormula valid = bfm.makeFalse();

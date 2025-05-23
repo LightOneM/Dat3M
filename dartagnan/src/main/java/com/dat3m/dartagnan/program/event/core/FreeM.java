@@ -16,7 +16,7 @@ public class FreeM extends AbstractMemoryCoreEvent {
 
     public FreeM(Expression address) {
         super(address,null);
-        addTags(Tag.FREE);
+        addTags(Tag.FREE, Tag.WRITE);
     }
 
     protected FreeM(FreeM other) {

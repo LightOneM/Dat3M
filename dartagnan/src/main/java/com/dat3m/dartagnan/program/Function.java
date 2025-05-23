@@ -102,6 +102,7 @@ public class Function implements LeafExpression {
         return entry == null ? List.of() : entry.getSuccessors();
     }
 
+
     public <T extends Event> List<T> getEvents(Class<T> cls) {
         return getEvents().stream().filter(cls::isInstance).map(cls::cast).collect(Collectors.toList());
     }
