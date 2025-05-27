@@ -576,7 +576,7 @@ public class WmmEncoder implements Encoder {
         }
 
         private BooleanFormula isSameBase(MemoryCoreEvent e1, MemoryCoreEvent e2) { //TODO inline after testing
-            return bvmg.equal(((TupleFormula) context.address(e1).formula()).base(),((TupleFormula) context.address(e2).formula()).base());
+            return bvmg.equal(((TupleFormula) context.address(e1).formula()).first(),((TupleFormula) context.address(e2).formula()).first());
         }
 
 

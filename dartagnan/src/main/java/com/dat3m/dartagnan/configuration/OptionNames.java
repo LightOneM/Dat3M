@@ -30,8 +30,8 @@ public class OptionNames {
     public static final String C_TO_POWER_SCHEME = "compilation.cToPower";
 
     // Encoding Options
-    public static final String USE_INTEGERS = "encoding.integers";
-    public static final String PROVENANCE_MODEL = "encoding.provenanceModelVal";
+    public static final String USE_INTEGERS = "integers";
+    public static final String PROVENANCE_MODEL = "provenance";
     public static final String ENABLE_ACTIVE_SETS = "encoding.activeSets";
     public static final String REDUCE_ACYCLICITY_ENCODE_SETS = "encoding.wmm.reduceAcyclicityEncodeSets";
     public static final String MERGE_CF_VARS = "encoding.mergeCFVars";
@@ -42,7 +42,7 @@ public class OptionNames {
     public static final String IDL_TO_SAT = "encoding.wmm.idl2sat";
 
     // Program Processing Options
-    public static final String INSTRUMENT = "program.processing.instrument";
+    public static final String INSTRUMENT = "instrument";
     public static final String DETERMINISTIC_REORDERING = "program.processing.detReordering";
     public static final String REDUCE_SYMMETRY = "program.processing.reduceSymmetry";
     public static final String CONSTANT_PROPAGATION = "program.processing.constantPropagation";

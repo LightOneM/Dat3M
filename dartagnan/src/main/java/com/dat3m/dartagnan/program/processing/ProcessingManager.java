@@ -29,7 +29,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = INSTRUMENT,
             description = "Instruments pointer validity tests. Default True",
             secure = true)
-    private boolean instument = true;
+    private boolean instrument = true;
 
     @Option(name = CONSTANT_PROPAGATION,
             description = "Performs constant propagation.",
@@ -75,7 +75,7 @@ public class ProcessingManager implements ProgramProcessor {
     @Option(name = PRINT_PROGRAM_AFTER_PROCESSING,
             description = "Prints the program after all processing.",
             secure = true)
-    private boolean printAfterProcessing = true;
+    private boolean printAfterProcessing = false;
     @Option(name = PRINT_PROGRAM_AFTER_INSTRUMENTATION,
             description = "Prints the program after all processing.",
             secure = true)
@@ -83,6 +83,7 @@ public class ProcessingManager implements ProgramProcessor {
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
+        System.out.println("Instrument"+ instrument);
         final Intrinsics intrinsics = Intrinsics.fromConfig(config);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;
@@ -148,13 +149,13 @@ public class ProcessingManager implements ProgramProcessor {
                 // --- Statistics + verification ---
                 IdReassignment.newInstance(), // Normalize used Ids (remove any gaps)
                 printAfterProcessing ? DebugPrint.withHeader("After processing", Printer.Mode.THREADS) : null,
-                instument?Instrumentation.newInstance():null,
+                instrument?Instrumentation.newInstance():null,
                 printAfterInstrumentation ? DebugPrint.withHeader("After Instrumentation", Printer.Mode.ALL) : null,
                 ProgramProcessor.fromFunctionProcessor(
                         CoreCodeVerification.fromConfig(config),
                         Target.THREADS, false
                 ),
-                instument ? IdReassignment.newInstance():null,
+                instrument ? IdReassignment.newInstance():null,
                 LogThreadStatistics.newInstance()
         ));
         programProcessors.removeIf(Objects::isNull);
@@ -167,6 +168,7 @@ public class ProcessingManager implements ProgramProcessor {
     // ==================================================
     public void run(Program program) {
         programProcessors.forEach(p -> p.run(program));
+
     }
 
 }

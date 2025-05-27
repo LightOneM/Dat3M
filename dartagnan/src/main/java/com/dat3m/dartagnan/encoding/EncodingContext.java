@@ -51,7 +51,7 @@ public final class EncodingContext {
     private final FormulaManagerExt formulaManager;
     private final BooleanFormulaManager booleanFormulaManager;
     private final ExpressionEncoder exprEncoder;
-    public final  ProvenanceModel provenance; // TODO make it private
+    public ProvenanceModel provenance; // TODO make it private
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
 
     public enum ProvenanceModel {
@@ -60,28 +60,21 @@ public final class EncodingContext {
         PLAIN,
 
     }
-
-
-
    @Option(
            name = PROVENANCE_MODEL,
-           description = "Use the simple model of provenance.  Default: True .",
+           description = "Use a of provenance.  Default: no .",
            secure = true)
-    String provenanceModelVal = "plain";
+    String provenanceV = "no";
 
-
-
-
-
-    private static ProvenanceModel parseProvenanceModel(String val) {
-        switch (val.toLowerCase()) {
+    private void parseProvenanceModel() {
+         provenance = switch (provenanceV) {
             case "simple":
-                return ProvenanceModel.SIMPLE;
+                yield ProvenanceModel.SIMPLE;
             case "plain":
-                return ProvenanceModel.PLAIN;
+                yield  ProvenanceModel.PLAIN;
             default:
-                return ProvenanceModel.NO;
-        }
+                yield  ProvenanceModel.NO;
+        };
     }
 
     @Option(
@@ -113,7 +106,6 @@ public final class EncodingContext {
     private final Map<MemoryObject, TypedFormula<IntegerType, ?>> objSize = new HashMap<>();
 
     private EncodingContext(VerificationTask t, Context a, FormulaManager m) {
-        this.provenance = parseProvenanceModel(provenanceModelVal);
         verificationTask = checkNotNull(t);
         analysisContext = checkNotNull(a);
         a.requires(BranchEquivalence.class);
@@ -128,6 +120,9 @@ public final class EncodingContext {
     public static EncodingContext of(VerificationTask task, Context analysisContext, FormulaManager formulaManager) throws InvalidConfigurationException {
         EncodingContext context = new EncodingContext(task, analysisContext, formulaManager);
         task.getConfig().inject(context);
+        context.parseProvenanceModel();
+        System.out.println("Provenance model: " + context.provenance);
+        System.out.println("Integers: " + context.useIntegers);
         logger.info("{}: {}", IDL_TO_SAT, context.useSATEncoding);
         logger.info("{}: {}", MERGE_CF_VARS, context.shouldMergeCFVars);
         context.initialize();
