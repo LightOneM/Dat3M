@@ -571,12 +571,20 @@ public class WmmEncoder implements Encoder {
         public Void visitSameObject(SameObject locDef) {
             final Relation loc = locDef.getDefinedRelation();
             EncodingContext.EdgeEncoder edge = context.edge(loc);
-            encodeSets.get(loc).apply((e1, e2) -> enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(execution(e1, e2), isSameBase((MemoryCoreEvent) e1, (MemoryCoreEvent) e2)))));
+            encodeSets.get(loc).apply((e1, e2) -> {
+                try {
+                    enc.add(bmgr.equivalence(edge.encode(e1, e2), bmgr.and(execution(e1, e2), isSameBase((MemoryCoreEvent) e1, (MemoryCoreEvent) e2))));
+                } catch (InvalidConfigurationException e) {
+                    throw new RuntimeException(e);
+                }
+            });
             return null;
         }
 
-        private BooleanFormula isSameBase(MemoryCoreEvent e1, MemoryCoreEvent e2) { //TODO inline after testing
-            return bvmg.equal(((TupleFormula) context.address(e1).formula()).first(),((TupleFormula) context.address(e2).formula()).first());
+        private BooleanFormula isSameBase(MemoryCoreEvent e1, MemoryCoreEvent e2) throws InvalidConfigurationException { //TODO inline after testing
+            if(context.address(e1).formula() instanceof TupleFormula t1 && context.address(e2).formula() instanceof TupleFormula t2){
+                return bvmg.equal(t1.first(), t2.first());};
+            throw new InvalidConfigurationException("CAT same object relation (sobj) requires a provenance model");
         }
 
 

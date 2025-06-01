@@ -58,6 +58,7 @@ public final class EncodingContext {
         NO,
         SIMPLE,
         PLAIN,
+        COMPLETE
 
     }
    @Option(
@@ -72,6 +73,8 @@ public final class EncodingContext {
                 yield ProvenanceModel.SIMPLE;
             case "plain":
                 yield  ProvenanceModel.PLAIN;
+            case "complete":
+                yield  ProvenanceModel.COMPLETE;
             default:
                 yield  ProvenanceModel.NO;
         };

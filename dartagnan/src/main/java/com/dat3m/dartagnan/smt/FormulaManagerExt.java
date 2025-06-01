@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.sosy_lab.java_smt.api.*;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -94,6 +95,46 @@ public class FormulaManagerExt {
         }
 
         return getBooleanFormulaManager().ifThenElse(guard, thenF, elseF);
+    }
+
+
+// when comparing bitvectors signed is hardcoded false
+    public BooleanFormula lessThan(Formula left, Formula right) {
+        Preconditions.checkArgument(hasSameType(left, right));
+        if (left instanceof NumeralFormula.IntegerFormula l) {
+            return getIntegerFormulaManager().lessThan(l, (NumeralFormula.IntegerFormula) right);
+        } else if (left instanceof BitvectorFormula l) {
+            return getBitvectorFormulaManager().lessThan(l, (BitvectorFormula) right, false);
+        }
+        throw new UnsupportedOperationException(String.format("Unknown types for lessThan(%s, %s)", left, right));
+    }
+
+    public BooleanFormula greaterOrEquals(Formula left, Formula right) {
+        Preconditions.checkArgument(hasSameType(left, right));
+        if (left instanceof NumeralFormula.IntegerFormula l) {
+            return getIntegerFormulaManager().greaterOrEquals(l, (NumeralFormula.IntegerFormula) right);
+        } else if (left instanceof BitvectorFormula l) {
+            return getBitvectorFormulaManager().greaterOrEquals(l, (BitvectorFormula) right, false);
+        }
+        throw new UnsupportedOperationException(String.format("Unknown types for greaterOrEqual(%s, %s)", left, right));
+    }
+    public Formula makeConstant(Formula ty, BigInteger val) {
+
+        if (ty instanceof NumeralFormula.IntegerFormula l) {
+            return getIntegerFormulaManager().makeNumber(val);
+        } else if (ty instanceof BitvectorFormula l) {
+            return getBitvectorFormulaManager().makeBitvector(getBitvectorFormulaManager().getLength(l), val);
+        }
+        throw new UnsupportedOperationException("Unknown types");
+    }
+    public Formula subtract(Formula left, Formula right) {
+        Preconditions.checkArgument(hasSameType(left, right));
+        if (left instanceof NumeralFormula.IntegerFormula l) {
+            return getIntegerFormulaManager().subtract(l, (NumeralFormula.IntegerFormula) right);
+        } else if (left instanceof BitvectorFormula l) {
+            return getBitvectorFormulaManager().subtract(l, (BitvectorFormula) right);
+        }
+        throw new UnsupportedOperationException(String.format("Unknown types for substract(%s, %s)", left, right));
     }
 
 }

@@ -83,7 +83,7 @@ public class ProcessingManager implements ProgramProcessor {
 // ======================================================================
     private ProcessingManager(Configuration config) throws InvalidConfigurationException {
         config.inject(this);
-        System.out.println("Instrument"+ instrument);
+        System.out.println("Instrument: "+ instrument);
         final Intrinsics intrinsics = Intrinsics.fromConfig(config);
         final FunctionProcessor sccp = constantPropagation ? SparseConditionalConstantPropagation.fromConfig(config) : null;
         final FunctionProcessor dce = performDce ? DeadAssignmentElimination.fromConfig(config) : null;

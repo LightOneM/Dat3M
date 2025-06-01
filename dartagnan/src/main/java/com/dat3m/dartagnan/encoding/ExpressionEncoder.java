@@ -118,6 +118,18 @@ public class ExpressionEncoder {
                             : bitvectorFormulaManager().makeVariable(types.getArchType().getBitWidth(), name + "_address");
                     variable = fmgr.getTupleFormulaManager().makeTuple(base, address);
                 }
+                case COMPLETE -> {
+                    final Formula base = context.useIntegers
+                            ? integerFormulaManager().makeVariable(name + "_base")
+                            : bitvectorFormulaManager().makeVariable(types.getArchType().getBitWidth(), name + "_base");
+                    final Formula offset = context.useIntegers
+                            ? integerFormulaManager().makeVariable(name + "_offset")
+                            : bitvectorFormulaManager().makeVariable(types.getArchType().getBitWidth(), name + "_offset");
+                    final Formula address = context.useIntegers
+                            ? integerFormulaManager().makeVariable(name + "_address")
+                            : bitvectorFormulaManager().makeVariable(types.getArchType().getBitWidth(), name + "_address");
+                    variable = fmgr.getTupleFormulaManager().makeTuple(base, offset, address);
+                }
             }
         } else if (type instanceof AggregateType || type instanceof ArrayType) {
             final Map<Integer, Type> primitives = types.decomposeIntoPrimitives(type);
@@ -217,6 +229,9 @@ public class ExpressionEncoder {
                 }
                 case SIMPLE,PLAIN -> {
                     assert typedFormula.formula() instanceof TupleFormula tuple && tuple.getSize() == 2;
+                }
+                case COMPLETE -> {
+                    assert typedFormula.formula() instanceof TupleFormula tuple && tuple.getSize() == 3;
                 }
             }
             return (TypedFormula<PointerType, ?>) typedFormula;
@@ -565,9 +580,21 @@ public class ExpressionEncoder {
                 case SIMPLE, PLAIN -> {
                     final TupleFormula baseTuple = (TupleFormula) base.formula();
                     assert baseTuple.getSize() == 2;
+                    final TypedFormula<IntegerType, ?> old_ = wrap(offset.type(), fmgr.getTupleFormulaManager().extract(baseTuple, 1));
+                    final TypedFormula<IntegerType, ?> new_ = encodeIntegerExpr(context.getExpressionFactory().makeAdd(old_, offset));
+                    Formula f = fmgr.getTupleFormulaManager().insert(baseTuple, new_.formula(), 1);
+                    return new TypedFormula<>(
+                            base.getType(), f
+                    );
+                }
+                case COMPLETE -> {
+                    final TupleFormula baseTuple = (TupleFormula) base.formula();
+                    assert baseTuple.getSize() == 3;
                     final TypedFormula<IntegerType, ?> baseOffset = wrap(offset.type(), fmgr.getTupleFormulaManager().extract(baseTuple, 1));
                     final TypedFormula<IntegerType, ?> newOffset = encodeIntegerExpr(context.getExpressionFactory().makeAdd(baseOffset, offset));
-                    Formula f = fmgr.getTupleFormulaManager().insert(baseTuple, newOffset.formula(), 1);
+                    final TypedFormula<IntegerType, ?> baseAdr = wrap(offset.type(), fmgr.getTupleFormulaManager().extract(baseTuple, 2));
+                    final TypedFormula<IntegerType, ?> newAdr = encodeIntegerExpr(context.getExpressionFactory().makeAdd(baseAdr, offset));
+                    Formula f = fmgr.getTupleFormulaManager().insert(fmgr.getTupleFormulaManager().insert(baseTuple, newOffset.formula(), 1),newAdr.formula(),2);
                     return new TypedFormula<>(
                             base.getType(),f
                     );
@@ -591,7 +618,8 @@ public class ExpressionEncoder {
                             wrap(expr.getType(), fmgr.getTupleFormulaManager().extract(ptrTuple, 1))
                     ));
                 }
-                case PLAIN -> encodeIntegerExpr(wrap(expr.getType(), fmgr.getTupleFormulaManager().extract((TupleFormula)ptr.formula(), 1)));// FIXME maybe?
+                case PLAIN -> encodeIntegerExpr(wrap(expr.getType(), fmgr.getTupleFormulaManager().extract((TupleFormula)ptr.formula(), 1)));
+                case COMPLETE -> encodeIntegerExpr(wrap(expr.getType(), fmgr.getTupleFormulaManager().extract((TupleFormula)ptr.formula(), 2)));
             };
         }
 
@@ -601,7 +629,7 @@ public class ExpressionEncoder {
 
             return switch (context.provenance) {
                 case NO -> new TypedFormula<>(expr.getType(), address.formula());
-                case SIMPLE ,PLAIN -> {
+                case SIMPLE ,PLAIN, COMPLETE -> {
                     final ExpressionFactory exprs = context.getExpressionFactory();
                     final Set<MemoryObject> memoryObjects = context.getTask().getProgram().getMemory().getObjects();
 
@@ -648,6 +676,9 @@ public class ExpressionEncoder {
                 case SIMPLE , PLAIN -> new TypedFormula<>(lit.getType(),
                         fmgr.getTupleFormulaManager().makeTuple(zero, zero)
                 );
+                case COMPLETE -> new TypedFormula<>(lit.getType(),
+                        fmgr.getTupleFormulaManager().makeTuple(zero, zero, zero)
+                );
             };
         }
 
@@ -677,7 +708,13 @@ public class ExpressionEncoder {
                 );
                 case PLAIN -> {
                     Formula b = makeVariable(String.format("baseof(%s)", memObj), types.getArchType()).formula();
+                    // Formula a = makeVariable(String.format("addrof(%s)", memObj), types.getArchType()).formula();
                     yield fmgr.getTupleFormulaManager().makeTuple(List.of(b,b));
+                }
+                case COMPLETE -> {
+                    Formula a = makeVariable(String.format("addrof(%s)", memObj), types.getArchType()).formula();
+                    Formula b = makeVariable(String.format("baseof(%s)", memObj), types.getArchType()).formula();
+                    yield fmgr.getTupleFormulaManager().makeTuple(List.of(b,encodeIntegerExpr(context.getExpressionFactory().makeZero(types.getArchType())).formula(),a));
                 }
             };
             return new TypedFormula<>(memObj.getType(), result);
@@ -693,23 +730,57 @@ public class ExpressionEncoder {
             return makeVariable(name, val.getType());
         }
 
+//        @Override
+//        public TypedFormula<BooleanType,BooleanFormula> visitPointerValidationExpression(PointerValidation pv){
+//            BooleanFormulaManager bfm = fmgr.getBooleanFormulaManager();
+//            BitvectorFormulaManager bvm = bitvectorFormulaManager();
+//            return switch(context.provenance){
+//                case NO -> new TypedFormula<>(types.getBooleanType(),bfm.makeTrue());
+//                case SIMPLE -> {
+//                    final TupleFormula ptr = (TupleFormula) encodePointerExpr(pv.getOperand()).formula();
+//                    BooleanFormula valid = bfm.makeFalse();
+//                    final Set<MemoryObject> memoryObjects = context.getTask().getProgram().getMemory().getObjects();
+//                    for (MemoryObject memoryObject : memoryObjects) {
+//                        final TupleFormula mem = (TupleFormula) encodePointerExpr(memoryObject).formula();
+//                        final BitvectorFormula size  = (BitvectorFormula) context.size(memoryObject).formula();
+//                        BooleanFormula condition = bfm.and(bvm.lessThan(ptr.second(), size,false),bvm.equal(ptr.first(), mem.first()));
+//                        valid = bfm.or(valid, condition);
+//                    }
+//                    valid = bfm.and(valid,bvm.greaterOrEquals(ptr.second(),bvm.makeBitvector(bvm.getLength(ptr.second()), BigInteger.ZERO),false));
+//                    yield new TypedFormula<>(types.getBooleanType(), valid);}
+//
+//
+//                case PLAIN -> {// FIXME extract redundant code
+//                    final TupleFormula ptr = (TupleFormula) encodePointerExpr(pv.getOperand()).formula();
+//                    BooleanFormula valid = bfm.makeFalse();
+//                    final Set<MemoryObject> memoryObjects = context.getTask().getProgram().getMemory().getObjects();
+//                    for (MemoryObject memoryObject : memoryObjects) {
+//                        final TupleFormula mem = (TupleFormula) encodePointerExpr(memoryObject).formula();
+//                        final BitvectorFormula size  = (BitvectorFormula) context.size(memoryObject).formula();
+//                        BooleanFormula condition = bfm.and(bvm.lessThan(bvm.subtract(ptr.second(),ptr.first()), size,false),bvm.equal(ptr.first(), mem.first()));
+//                        valid = bfm.or(valid, condition);
+//                    }
+//                    valid = bfm.and(valid,bvm.greaterOrEquals(ptr.second(),bvm.makeBitvector(bvm.getLength(ptr.second()), BigInteger.ZERO),false));
+//                    yield new TypedFormula<>(types.getBooleanType(), valid);
+//                }
+//            };
+//        }
         @Override
         public TypedFormula<BooleanType,BooleanFormula> visitPointerValidationExpression(PointerValidation pv){
             BooleanFormulaManager bfm = fmgr.getBooleanFormulaManager();
-            BitvectorFormulaManager bvm = bitvectorFormulaManager();
             return switch(context.provenance){
                 case NO -> new TypedFormula<>(types.getBooleanType(),bfm.makeTrue());
-                case SIMPLE -> {
+                case SIMPLE, COMPLETE -> {
                     final TupleFormula ptr = (TupleFormula) encodePointerExpr(pv.getOperand()).formula();
                     BooleanFormula valid = bfm.makeFalse();
                     final Set<MemoryObject> memoryObjects = context.getTask().getProgram().getMemory().getObjects();
                     for (MemoryObject memoryObject : memoryObjects) {
                         final TupleFormula mem = (TupleFormula) encodePointerExpr(memoryObject).formula();
                         final BitvectorFormula size  = (BitvectorFormula) context.size(memoryObject).formula();
-                        BooleanFormula condition = bfm.and(bvm.lessThan(ptr.second(), size,false),bvm.equal(ptr.first(), mem.first()));
+                        BooleanFormula condition = bfm.and(fmgr.lessThan(ptr.second(), size),fmgr.equal(ptr.first(), mem.first()));
                         valid = bfm.or(valid, condition);
                     }
-                    valid = bfm.and(valid,bvm.greaterOrEquals(ptr.second(),bvm.makeBitvector(bvm.getLength(ptr.second()), BigInteger.ZERO),false));
+                    valid = bfm.and(valid,fmgr.greaterOrEquals(ptr.second(),fmgr.makeConstant(ptr.second(), BigInteger.ZERO)));
                     yield new TypedFormula<>(types.getBooleanType(), valid);}
 
 
@@ -720,14 +791,16 @@ public class ExpressionEncoder {
                     for (MemoryObject memoryObject : memoryObjects) {
                         final TupleFormula mem = (TupleFormula) encodePointerExpr(memoryObject).formula();
                         final BitvectorFormula size  = (BitvectorFormula) context.size(memoryObject).formula();
-                        BooleanFormula condition = bfm.and(bvm.lessThan(bvm.subtract(ptr.second(),ptr.first()), size,false),bvm.equal(ptr.first(), mem.first()));
+                        BooleanFormula condition = bfm.and(fmgr.lessThan(fmgr.subtract(ptr.second(),ptr.first()), size),fmgr.equal(ptr.first(), mem.first()));
                         valid = bfm.or(valid, condition);
                     }
-                    valid = bfm.and(valid,bvm.greaterOrEquals(ptr.second(),bvm.makeBitvector(bvm.getLength(ptr.second()), BigInteger.ZERO),false));
+                    valid = bfm.and(valid,fmgr.greaterOrEquals(ptr.second(),fmgr.makeConstant(ptr.second(), BigInteger.ZERO)));
+                    // System.out.println(valid);
                     yield new TypedFormula<>(types.getBooleanType(), valid);
                 }
             };
         }
+
 
 
         }
