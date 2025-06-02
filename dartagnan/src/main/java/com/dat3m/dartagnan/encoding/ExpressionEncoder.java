@@ -103,7 +103,7 @@ public class ExpressionEncoder {
             variable = bmgr.makeVariable(name);
         } else if (type instanceof IntegerType integerType) {
             variable = context.useIntegers
-                    ? tmgr.makeTuple(imgr.makeNumber(0),imgr.makeVariable(name))
+                    ? tmgr.makeTuple(imgr.makeNumber(BigInteger.ZERO),imgr.makeVariable(name))
                     : tmgr.makeTuple(bvmgr.makeBitvector(integerType.getBitWidth(),BigInteger.ZERO),bvmgr.makeVariable(integerType.getBitWidth(), name)); // FIXME swap first one to arch type
         } else if (type instanceof PointerType pointerType) {
             switch (context.provenance) {
@@ -229,12 +229,8 @@ public class ExpressionEncoder {
             final TypedFormula<?, ?> typedFormula = encode(expression);
             assert typedFormula.type() == expression.getType();
             switch (context.provenance) {
-                case SIMPLE,PLAIN -> {
-                    assert typedFormula.formula() instanceof TupleFormula tuple && tuple.getSize() == 2;
-                }
-                case COMPLETE -> {
-                    assert typedFormula.formula() instanceof TupleFormula tuple && tuple.getSize() == 3;
-                }
+                case SIMPLE,PLAIN -> {assert typedFormula.formula() instanceof TupleFormula tuple && tuple.getSize() == 2;}
+                case COMPLETE -> {assert typedFormula.formula() instanceof TupleFormula tuple && tuple.getSize() == 3;}
             }
             return (TypedFormula<PointerType, ?>) typedFormula;
         }

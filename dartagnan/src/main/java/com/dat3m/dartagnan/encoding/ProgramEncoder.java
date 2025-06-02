@@ -63,6 +63,7 @@ public class ProgramEncoder implements Encoder {
     private final EncodingContext context;
     private final ExecutionAnalysis exec;
     private final ReachingDefinitionsAnalysis definitions;
+    private final BooleanFormulaManager bmgr;
 
     private ProgramEncoder(EncodingContext c) {
         Preconditions.checkArgument(c.getTask().getProgram().isCompiled(), "The program must be compiled before encoding.");
@@ -70,6 +71,7 @@ public class ProgramEncoder implements Encoder {
         c.getAnalysisContext().requires(BranchEquivalence.class);
         this.exec = c.getAnalysisContext().requires(ExecutionAnalysis.class);
         this.definitions = c.getAnalysisContext().requires(ReachingDefinitionsAnalysis.class);
+        this.bmgr = context.getBooleanFormulaManager();
     }
 
     public static ProgramEncoder withContext(EncodingContext context) throws InvalidConfigurationException {
@@ -83,7 +85,7 @@ public class ProgramEncoder implements Encoder {
     // ====================================== Encoding ======================================
 
     public BooleanFormula encodeFullProgram() {
-        return context.getBooleanFormulaManager().and(
+        return bmgr.and(
                 encodeControlBarriers(),
                 encodeNamedControlBarriers(),
                 encodeConstants(),
@@ -111,7 +113,7 @@ public class ProgramEncoder implements Encoder {
                 enc.add(exprEnc.encodeBooleanFinal(constraints).formula());
             }
         }
-        return context.getBooleanFormulaManager().and(enc);
+        return bmgr.and(enc);
     }
 
     // ====================================== Control flow ======================================
@@ -123,7 +125,6 @@ public class ProgramEncoder implements Encoder {
         // FIXME: The guessing allows for mismatches: the spawning may succeed but the guess says it doesn't.
      */
     private BooleanFormula threadIsEnabled(Thread thread) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ThreadStart start = thread.getEntry();
         if (!start.isSpawned()) {
             return bmgr.makeTrue();
@@ -141,7 +142,6 @@ public class ProgramEncoder implements Encoder {
 
     // NOTE: A thread that was never spawned is also non-terminating.
     private BooleanFormula threadHasTerminated(Thread thread) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return bmgr.and(
                 context.execution(thread.getExit()), // Also guarantees that we are not stuck in a barrier
                 bmgr.not(threadIsStuckInLoop(thread))
@@ -150,7 +150,6 @@ public class ProgramEncoder implements Encoder {
 
     // NOTE: Stuckness also considers bound events, i.e., insufficiently unrolled loops.
     private BooleanFormula threadIsStuckInLoop(Thread thread) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return thread.getEvents(CondJump.class).stream()
                 .filter(jump -> jump.hasTag(Tag.NONTERMINATION))
                 .map(context::jumpTaken)
@@ -158,7 +157,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     private BooleanFormula threadIsBlocked(Thread thread) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         return thread.getEvents(BlockingEvent.class).stream()
                 .map(context::blocked)
                 .reduce(bmgr.makeFalse(), bmgr::or);
@@ -179,9 +177,7 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeControlFlow() {
         logger.info("Encoding program control flow with progress model {}", context.getTask().getProgressModel());
-
         final Program program = context.getTask().getProgram();
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ForwardProgressEncoder progressEncoder = new ForwardProgressEncoder();
         List<BooleanFormula> enc = new ArrayList<>();
         for(Thread t : program.getThreads()){
@@ -206,7 +202,6 @@ public class ProgramEncoder implements Encoder {
         TODO: Refactor out the awkward .encodeExec calls
      */
     private BooleanFormula encodeConsistentThreadCF(Thread thread) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ThreadStart startEvent = thread.getEntry();
         final List<BooleanFormula> enc = new ArrayList<>();
 
@@ -240,7 +235,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     private BooleanFormula encodeControlBarriers() {
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
         Map<String, BooleanFormula> allCfVariables = new HashMap<>();
 
@@ -267,7 +261,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     private BooleanFormula encodeNamedControlBarriers() {
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula enc = bmgr.makeTrue();
 
         Map<String, List<NamedBarrier>> barriers = context.getTask().getProgram().getThreadEvents(NamedBarrier.class).stream()
@@ -292,7 +285,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     private BooleanFormula encodeNamedBarrierCfAll(NamedBarrier e1, List<NamedBarrier> events) {
-        BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         BooleanFormula allCF = bmgr.makeTrue();
         for (NamedBarrier e2 : events) {
             BooleanFormula sameId = context.getExpressionEncoder().equalAt(e1.getResourceId(), e1, e2.getResourceId(), e2);
@@ -320,7 +312,6 @@ public class ProgramEncoder implements Encoder {
      * - `sync_count(e) <=> sum((sync(e1) /\ sameId(e, e1)), (sync(e2) /\ sameId(e, e2)), .., (sync(en) /\ sameId(e, en)))`
      */
     private BooleanFormula encodeNamedBarrierCfQuorum(NamedBarrier e1, List<NamedBarrier> events) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
         final IntegerType numType = (IntegerType) e1.getQuorum().getType();
@@ -360,7 +351,6 @@ public class ProgramEncoder implements Encoder {
     }
 
     private BooleanFormula encodeMemoryLayout(Memory memory) {
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ExpressionEncoder exprEnc = context.getExpressionEncoder();
         final IntegerType archType = TypeFactory.getInstance().getArchType();
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
@@ -432,7 +422,6 @@ public class ProgramEncoder implements Encoder {
      */
     public BooleanFormula encodeDependencies() {
         logger.info("Encoding dependencies");
-        final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
         final ExpressionFactory exprs = ExpressionFactory.getInstance();
 
@@ -480,11 +469,10 @@ public class ProgramEncoder implements Encoder {
         if (!ignoreFilterSpec && filterSpec != null) {
             return context.getExpressionEncoder().encodeBooleanFinal(filterSpec).formula();
         }
-        return context.getBooleanFormulaManager().makeTrue();
+        return bmgr.makeTrue();
     }
 
     public BooleanFormula encodeFinalRegisterValues() {
-        final BooleanFormulaManager bmgr = context.getFormulaManager().getBooleanFormulaManager();
         final ExpressionFactory exprs = context.getExpressionFactory();
         final ExpressionEncoder exprEncoder = context.getExpressionEncoder();
         if (context.getTask().getProgram().getFormat() != Program.SourceLanguage.LITMUS) {
@@ -528,15 +516,15 @@ public class ProgramEncoder implements Encoder {
     private class ForwardProgressEncoder {
 
         private BooleanFormula hasForwardProgress(ThreadHierarchy threadHierarchy) {
-            return context.getBooleanFormulaManager().makeVariable("hasProgress " + threadHierarchy.toString());
+            return bmgr.makeVariable("hasProgress " + threadHierarchy.toString());
         }
 
         private BooleanFormula isSchedulable(ThreadHierarchy threadHierarchy) {
-            return context.getBooleanFormulaManager().makeVariable("schedulable " + threadHierarchy.toString());
+            return bmgr.makeVariable("schedulable " + threadHierarchy.toString());
         }
 
         private BooleanFormula wasScheduledOnce(ThreadHierarchy threadHierarchy) {
-            return context.getBooleanFormulaManager().makeVariable("wasScheduledOnce " + threadHierarchy.toString());
+            return bmgr.makeVariable("wasScheduledOnce " + threadHierarchy.toString());
         }
 
         /*
@@ -544,7 +532,6 @@ public class ProgramEncoder implements Encoder {
             In particular, if the thread is enabled then it will eventually execute.
          */
         private BooleanFormula encodeFairForwardProgress(Thread thread) {
-            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
 
             // An enabled thread eventually gets started/scheduled
@@ -569,7 +556,6 @@ public class ProgramEncoder implements Encoder {
         }
 
         private BooleanFormula encodeForwardProgress(Program program, ProgressModel.Hierarchy progressModel) {
-            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             List<BooleanFormula> enc = new ArrayList<>();
 
             // Step (1): Find hierarchy (this does not contain init threads)
@@ -632,7 +618,6 @@ public class ProgramEncoder implements Encoder {
         }
 
         private BooleanFormula encodeProgressForwarding(ThreadHierarchy group, ProgressModel progressModel) {
-            final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
             final List<BooleanFormula> enc = new ArrayList<>();
 
             switch (progressModel) {
