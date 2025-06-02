@@ -44,7 +44,7 @@ public abstract class AbstractCTest {
     protected Configuration getConfiguration() throws InvalidConfigurationException {
         return Configuration.builder()
                 .setOption(OptionNames.USE_INTEGERS, "false")
-                .setOption(OptionNames.SIMPLE_PROVENANCE, "true")
+                .setOption(OptionNames.PROVENANCE_MODEL, "true")
                 .setOption(OptionNames.INSTRUMENT, "true")
                 .setOption(OptionNames.PROPERTY, "cat_spec")
                 .build();
