@@ -54,7 +54,7 @@ public abstract class AbstractCTest {
     }
 
     protected Provider<Integer> getBoundProvider() {
-        return () -> 3;
+        return () -> 1;
     }
 
     protected Provider<Solvers> getSolverProvider() {
