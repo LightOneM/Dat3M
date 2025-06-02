@@ -52,14 +52,9 @@ public class FormulaManagerExt {
             final BitvectorFormulaManager bvmgr = getBitvectorFormulaManager();
             return bvmgr.getLength(x) == bvmgr.getLength(y);
         } else if (left instanceof TupleFormula x && right instanceof TupleFormula y) {
-            if (x.elements.size() != y.elements.size()) {
-                return false;
-            }
-            return IntStream.range(0, x.elements.size()).allMatch(
-                    i -> hasSameType(x.elements.get(i), y.elements.get(i))
-            );
+            if (x.elements.size() != y.elements.size()) {return false;}
+            return IntStream.range(0, x.elements.size()).allMatch(i -> hasSameType(x.elements.get(i), y.elements.get(i)));
         }
-
         return false;
     }
 
@@ -120,7 +115,7 @@ public class FormulaManagerExt {
     }
     public Formula makeConstant(Formula ty, BigInteger val) {
 
-        if (ty instanceof NumeralFormula.IntegerFormula l) {
+        if (ty instanceof NumeralFormula.IntegerFormula) {
             return getIntegerFormulaManager().makeNumber(val);
         } else if (ty instanceof BitvectorFormula l) {
             return getBitvectorFormulaManager().makeBitvector(getBitvectorFormulaManager().getLength(l), val);
@@ -135,6 +130,16 @@ public class FormulaManagerExt {
             return getBitvectorFormulaManager().subtract(l, (BitvectorFormula) right);
         }
         throw new UnsupportedOperationException(String.format("Unknown types for substract(%s, %s)", left, right));
+    }
+
+    public Formula add(Formula left, Formula right) {
+        Preconditions.checkArgument(hasSameType(left, right));
+        if (left instanceof NumeralFormula.IntegerFormula l) {
+            return getIntegerFormulaManager().add(l, (NumeralFormula.IntegerFormula) right);
+        } else if (left instanceof BitvectorFormula l) {
+            return getBitvectorFormulaManager().add(l, (BitvectorFormula) right);
+        }
+        throw new UnsupportedOperationException(String.format("Unknown types for addition(%s, %s)", left, right));
     }
 
 }

@@ -49,10 +49,14 @@ public class TupleFormula implements Formula {
     // TODO swap this to accommodate ints too
     // TODO this is bad code: define base and offset for pointer type only ( in typed formula if pointer type )
 
-    public BitvectorFormula first(){
-        return (BitvectorFormula) elements.get(0);
+    public Formula first(){
+        return elements.get(0);
     }
-    public BitvectorFormula second(){
-        return (BitvectorFormula) elements.get(1);
+    public Formula second(){
+        return elements.get(1);
     }
+    public Formula third(){
+        return elements.get(2);
+    }
+
 }

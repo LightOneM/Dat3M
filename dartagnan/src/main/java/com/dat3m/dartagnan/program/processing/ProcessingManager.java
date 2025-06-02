@@ -124,7 +124,6 @@ public class ProcessingManager implements ProgramProcessor {
                                 removeDeadJumps
                         ), Target.FUNCTIONS, true
                 ),
-                // somewhat instrumentation does not complain here
                 ThreadCreation.fromConfig(config),
                 ResolveNonDetChoices.newInstance(),
                 reduceSymmetry ? SymmetryReduction.fromConfig(config) : null,

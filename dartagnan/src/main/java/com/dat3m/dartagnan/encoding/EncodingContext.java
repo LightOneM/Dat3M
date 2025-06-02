@@ -55,11 +55,9 @@ public final class EncodingContext {
     private final ExpressionFactory exprs = ExpressionFactory.getInstance();
 
     public enum ProvenanceModel {
-        NO,
         SIMPLE,
         PLAIN,
         COMPLETE
-
     }
    @Option(
            name = PROVENANCE_MODEL,
@@ -71,12 +69,10 @@ public final class EncodingContext {
          provenance = switch (provenanceV) {
             case "simple":
                 yield ProvenanceModel.SIMPLE;
-            case "plain":
-                yield  ProvenanceModel.PLAIN;
-            case "complete":
+             case "complete":
                 yield  ProvenanceModel.COMPLETE;
             default:
-                yield  ProvenanceModel.NO;
+                yield  ProvenanceModel.PLAIN;
         };
     }
 

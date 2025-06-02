@@ -583,7 +583,7 @@ public class WmmEncoder implements Encoder {
 
         private BooleanFormula isSameBase(MemoryCoreEvent e1, MemoryCoreEvent e2) throws InvalidConfigurationException { //TODO inline after testing
             if(context.address(e1).formula() instanceof TupleFormula t1 && context.address(e2).formula() instanceof TupleFormula t2){
-                return bvmg.equal(t1.first(), t2.first());};
+                return context.getFormulaManager().equal(t1.first(), t2.first());};
             throw new InvalidConfigurationException("CAT same object relation (sobj) requires a provenance model");
         }
 
