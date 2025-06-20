@@ -107,20 +107,46 @@ public final class ExpressionFactory {
     }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        return makeIntCmp(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
+        final Type type = leftOperand.getType();
+        if (type instanceof IntegerType) {
+            return makeIntCmp(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);}
+        else if (type instanceof PointerType) {
+            return makePtrCmp(leftOperand, PointerCmpOp.LT, rightOperand);
+        }
+        throw new UnsupportedOperationException("Cannot compare %s with another type ?? " + type);
+
     }
 
     public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
+        final Type type = leftOperand.getType();
+        if (type instanceof IntegerType) {
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
+        }else if (type instanceof PointerType) {
+            return makePtrCmp(leftOperand, PointerCmpOp.GT, rightOperand);
+        }
+        throw new UnsupportedOperationException("Cannot compare %s with another type ?? " + type);
     }
 
     public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+        final Type type = leftOperand.getType();
+        if (type instanceof IntegerType) {
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
+        }else if (type instanceof PointerType) {
+            return makePtrCmp(leftOperand, PointerCmpOp.LTE, rightOperand);
+        }
+        throw new UnsupportedOperationException("Cannot compare %s with another type ?? " + type);
     }
 
     public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
+        final Type type = leftOperand.getType();
+        if (type instanceof IntegerType) {
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
+        }else if (type instanceof PointerType) {
+            return makePtrCmp(leftOperand, PointerCmpOp.GTE, rightOperand);
+        }
+        throw new UnsupportedOperationException("Cannot compare %s with another type ?? " + type);
     }
+
 
     public Expression makeNeg(Expression operand) {
         return makeIntUnary(IntUnaryOp.MINUS, operand);

@@ -26,14 +26,13 @@ import org.sosy_lab.java_smt.api.*;
 import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
+
+
 
 /*
     This class is responsible for doing all encoding related to IR types, in particular, all kinds of expressions.
@@ -41,16 +40,18 @@ import static java.util.Arrays.asList;
 public class ExpressionEncoder {
 
     private static final TypeFactory types = TypeFactory.getInstance();
-
+    private Map<Formula, Formula> exposed= new HashMap<>();
     private final EncodingContext context;
     private final FormulaManagerExt fmgr;
     private final BooleanFormulaManager bmgr;
     private final Visitor visitor = new Visitor();
 
+
     ExpressionEncoder(EncodingContext context) {
         this.context = context;
         this.fmgr = context.getFormulaManager();
         this.bmgr = fmgr.getBooleanFormulaManager();
+
     }
 
     private IntegerFormulaManager integerFormulaManager() {
@@ -661,6 +662,10 @@ public class ExpressionEncoder {
             final BooleanFormula result = switch (expr.getKind()) {
                 case EQ -> fmgr.equal(left.formula(), right.formula());
                 case NEQ -> bmgr.not(fmgr.equal(left.formula(), right.formula()));
+                case LT -> fmgr.lessThan(left.formula(), right.formula());
+                case LTE ->fmgr.lessOrEquals(left.formula(), right.formula());
+                case GT ->fmgr.greaterThan(left.formula(), right.formula());
+                case GTE ->fmgr.greaterOrEquals(left.formula(), right.formula());
             };
             return new TypedFormula<>(types.getBooleanType(), result);
         }

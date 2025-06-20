@@ -65,7 +65,7 @@ public final class EncodingContext {
            name = PROVENANCE_MODEL,
            description = "Use a of provenance.  Default: no .",
            secure = true)
-    String provenanceV = "no";
+    String provenanceV = "simple";
 
     private void parseProvenanceModel() {
          provenance = switch (provenanceV) {

@@ -3,7 +3,7 @@ package com.dat3m.dartagnan.expression.pointers;
 import com.dat3m.dartagnan.expression.ExpressionKind;
 
 public enum PointerCmpOp implements ExpressionKind {
-    EQ, NEQ;
+    EQ, NEQ, GTE, LTE, GT, LT;
 
     @Override
     public String toString() {
@@ -15,6 +15,11 @@ public enum PointerCmpOp implements ExpressionKind {
         return switch (this) {
             case EQ -> "==";
             case NEQ -> "!=";
+            case GTE -> ">=";
+            case LTE -> "<=";
+            case GT -> ">";
+            case LT -> "<";
         };
     }
 }
+

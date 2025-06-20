@@ -16,11 +16,15 @@ import java.util.stream.IntStream;
 public class FormulaManagerExt {
 
     private final FormulaManager fmgr;
+    private final BooleanFormulaManager bgr;
     private final TupleFormulaManager tmgr;
+    private final BitvectorFormulaManager bvgr;
 
     public FormulaManagerExt(FormulaManager fmgr) {
         this.fmgr = fmgr;
         this.tmgr = new TupleFormulaManager(this);
+        this.bvgr = fmgr.getBitvectorFormulaManager();
+        this.bgr = fmgr.getBooleanFormulaManager();
     }
 
     public FormulaManager getUnderlyingFormulaManager() { return fmgr; }
@@ -74,10 +78,9 @@ public class FormulaManagerExt {
             return getBooleanFormulaManager().equivalence(l, (BooleanFormula) right);
         } else if (left instanceof TupleFormula l && right instanceof TupleFormula r) {
             Preconditions.checkArgument(l.elements.size() == r.elements.size());
-            final BooleanFormulaManager bmgr = getBooleanFormulaManager();
             return IntStream.range(0, l.elements.size())
                     .mapToObj(i -> equal(l.elements.get(i), r.elements.get(i)))
-                    .reduce(bmgr.makeTrue(), bmgr::and);
+                    .reduce(bgr.makeTrue(), bgr::and);
         }
 
         throw new UnsupportedOperationException(String.format("Unknown types for equal(%s, %s)", left, right));
@@ -105,6 +108,8 @@ public class FormulaManagerExt {
             return getIntegerFormulaManager().lessThan(l, (NumeralFormula.IntegerFormula) right);
         } else if (left instanceof BitvectorFormula l) {
             return getBitvectorFormulaManager().lessThan(l, (BitvectorFormula) right, false);
+        }else if (left instanceof TupleFormula l) {
+            return bgr.and(bvgr.lessThan(l.second(),((TupleFormula)right).second(), false),bvgr.equal(l.first(),((TupleFormula)right).first()));
         }
         throw new UnsupportedOperationException(String.format("Unknown types for lessThan(%s, %s)", left, right));
     }
@@ -115,6 +120,8 @@ public class FormulaManagerExt {
             return getIntegerFormulaManager().greaterOrEquals(l, (NumeralFormula.IntegerFormula) right);
         } else if (left instanceof BitvectorFormula l) {
             return getBitvectorFormulaManager().greaterOrEquals(l, (BitvectorFormula) right, false);
+        }else if (left instanceof TupleFormula l) {
+            return bgr.and(bvgr.greaterOrEquals(l.second(),((TupleFormula)right).second(), false),bvgr.equal(l.first(),((TupleFormula)right).first()));
         }
         throw new UnsupportedOperationException(String.format("Unknown types for greaterOrEqual(%s, %s)", left, right));
     }
@@ -137,4 +144,27 @@ public class FormulaManagerExt {
         throw new UnsupportedOperationException(String.format("Unknown types for substract(%s, %s)", left, right));
     }
 
+    public BooleanFormula greaterThan(Formula left, Formula right) {
+        Preconditions.checkArgument(hasSameType(left, right));
+        if (left instanceof NumeralFormula.IntegerFormula l) {
+            return getIntegerFormulaManager().greaterThan(l, (NumeralFormula.IntegerFormula) right);
+        } else if (left instanceof BitvectorFormula l) {
+            return getBitvectorFormulaManager().greaterThan(l, (BitvectorFormula) right, false);
+        }else if (left instanceof TupleFormula l) {
+            return bgr.and(bvgr.greaterThan(l.second(),((TupleFormula)right).second(), false),bvgr.equal(l.first(),((TupleFormula)right).first()));
+        }
+        throw new UnsupportedOperationException(String.format("Unknown types for greaterThan(%s, %s)", left, right));
+    }
+
+    public BooleanFormula lessOrEquals(Formula left, Formula right) {
+        Preconditions.checkArgument(hasSameType(left, right));
+        if (left instanceof NumeralFormula.IntegerFormula l) {
+            return getIntegerFormulaManager().lessOrEquals(l, (NumeralFormula.IntegerFormula) right);
+        } else if (left instanceof BitvectorFormula l) {
+            return getBitvectorFormulaManager().lessOrEquals(l, (BitvectorFormula) right, false);
+        }else if (left instanceof TupleFormula l) {
+            return bgr.and(bvgr.lessOrEquals(l.second(),((TupleFormula)right).second(), false),bvgr.equal(l.first(),((TupleFormula)right).first()));
+        }
+        throw new UnsupportedOperationException(String.format("Unknown types for lessOrEqual(%s, %s)", left, right));
+    }
 }
