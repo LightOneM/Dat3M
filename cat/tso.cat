@@ -25,8 +25,7 @@ let ghb-tso = po-tso | com-tso | implied
 
 acyclic ghb-tso as tso
 
-
-(* Use after free detection *)
-let hb_after_free = [MFR];ghb-tso+;[M]
-let use_after_free = hb_after_free & sobj
-flag ~empty (use_after_free)
+flag ~empty (([M];sobj;[MFR]) \ ghn-tso*) as possible-access-after-free
+let alloc-free-matches = [MAL];loc;[MFR]
+flag ~empty [MFR] \ [range(alloc-free-matches)] as invalid-free
+flag ~empty [MAL] \ [domain(alloc-free-matches)] as memory-leak
