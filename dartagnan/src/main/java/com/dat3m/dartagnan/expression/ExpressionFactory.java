@@ -523,6 +523,9 @@ public final class ExpressionFactory {
     public Expression makeMemoryExtend(Expression operand, MemoryType targetType) {
         return new MemoryExtend(targetType, operand);
     }
+    public Expression makeMemoryEqualExpr(Expression left, Expression right){
+        return new MemoryEqualExpr(booleanType,left,right);
+    }
 
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -628,13 +631,13 @@ public final class ExpressionFactory {
 
     public Expression makeBitwiseEQ(Expression leftOperand, Expression rightOperand) {
 
-        if (leftOperand.getType() instanceof PointerType){
-            return makeBitwiseEQ(makePtrToIntCast(leftOperand, archType), rightOperand);
+        if (!(leftOperand.getType() instanceof MemoryType)){
+            return makeBitwiseEQ(makeToMemoryCast(leftOperand), rightOperand);
         }
-        if (rightOperand.getType() instanceof PointerType){
-            return makeBitwiseEQ(leftOperand, makePtrToIntCast(rightOperand, archType));
+        if (!(rightOperand.getType() instanceof MemoryType)){
+            return makeBitwiseEQ(leftOperand, makeToMemoryCast(rightOperand));
         }
-        return makeEQ(leftOperand, rightOperand);
+        return makeMemoryEqualExpr(leftOperand, rightOperand);
     }
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {

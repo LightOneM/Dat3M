@@ -70,9 +70,7 @@ public class FormulaManagerExt {
     public BooleanFormula equal(Formula left, Formula right) {
         Preconditions.checkArgument(hasSameType(left, right));
 
-        if (left instanceof NumeralFormula.IntegerFormula l) {
-            return getIntegerFormulaManager().equal(l, (NumeralFormula.IntegerFormula) right);
-        } else if (left instanceof BitvectorFormula l) {
+        if (left instanceof BitvectorFormula l) {
             return getBitvectorFormulaManager().equal(l, (BitvectorFormula) right);
         } else if (left instanceof BooleanFormula l) {
             return getBooleanFormulaManager().equivalence(l, (BooleanFormula) right);

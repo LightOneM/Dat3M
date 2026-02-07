@@ -423,7 +423,6 @@ public class ExpressionEncoder {
             for (MemoryObject memoryObject : memoryObjects) {
                 final TypedFormula<PointerType, TupleFormula> basePtr = encodePointerExpr(memoryObject);
                 final TypedFormula<IntegerType, ?> size = context.size(memoryObject);
-
                 final Expression baseAddress = factory.makeIntegerCast(basePtr, size.getType(), false);
                 final Expression isInside = factory.makeAnd(
                         factory.makeLTE(baseAddress, address, false),
@@ -461,10 +460,12 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<BooleanType, BooleanFormula> visitPtrCmpExpression(PtrCmpExpr expr) {
-            final TupleFormula first =  encodePointerExpr(expr.getLeft()).formula();
-            final TupleFormula second =   encodePointerExpr(expr.getRight()).formula();
+            // We assume that a pointer can't point outside the memory object.
+            final TupleFormula first = encodePointerExpr(expr.getLeft()).formula();
+            final TupleFormula second = encodePointerExpr(expr.getRight()).formula();
             return new TypedFormula<>(types.getBooleanType(), tfmgr.equal(first, second));
-           //return encodeBooleanExpr(context.getExpressionFactory().makeBitwiseEQ(encodePointerExpr(expr.getLeft()),encodePointerExpr(expr.getRight())));
+           // return encodeBooleanExpr(factory.makeBitwiseEQ(encodePointerExpr(expr.getLeft()),
+            // encodePointerExpr(expr.getRight())));
         }
 
         @Override

@@ -498,10 +498,16 @@ public class ExprSimplifier extends ExprTransformer {
         if (inner instanceof ToMemoryCast toMemoryCast && toMemoryCast.getSourceType().equals(cast.getTargetType())) {
             return toMemoryCast.getOperand();
         }
-
         return expressions.makeFromMemoryCast(inner, cast.getTargetType());
     }
-
+    @Override
+    public Expression visitToMemoryCastExpression(ToMemoryCast cast) {
+        final Expression inner = cast.getOperand().accept(this);
+        if (inner instanceof FromMemoryCast toMemoryCast && toMemoryCast.getSourceType().equals(cast.getTargetType())) {
+            return toMemoryCast.getOperand();
+        }
+        return expressions.makeFromMemoryCast(inner, cast.getTargetType());
+    }
 
     // =================================== Helper methods ===================================
     // An expression is potentially eliminable if it either carries no dependencies
