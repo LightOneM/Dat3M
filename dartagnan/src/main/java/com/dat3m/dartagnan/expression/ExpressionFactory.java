@@ -524,6 +524,7 @@ public final class ExpressionFactory {
         return new MemoryExtend(targetType, operand);
     }
 
+
     // -----------------------------------------------------------------------------------------------------------------
 
     // Cast via a round-trip through memory: "fromMem(toMem(<expr>)) to <targetType>".

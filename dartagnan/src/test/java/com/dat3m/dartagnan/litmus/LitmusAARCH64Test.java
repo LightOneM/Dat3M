@@ -10,7 +10,7 @@ import org.sosy_lab.common.configuration.ConfigurationBuilder;
 import java.io.IOException;
 
 import static com.dat3m.dartagnan.configuration.OptionNames.MIXED_SIZE;
-import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
+// import static com.dat3m.dartagnan.configuration.OptionNames.USE_INTEGERS;
 
 @RunWith(Parameterized.class)
 public class LitmusAARCH64Test extends AbstractLitmusTest {
@@ -37,7 +37,7 @@ public class LitmusAARCH64Test extends AbstractLitmusTest {
     @Override
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
         return builder
-                .setOption(USE_INTEGERS, "false")
+                //.setOption(USE_INTEGERS, "false")
                 .setOption(MIXED_SIZE, String.valueOf(filePathProvider.get().contains("litmus/AARCH64/mixed/")));
     }
 }

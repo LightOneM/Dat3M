@@ -107,16 +107,16 @@ public class ProgramEncoder implements Encoder {
         final ExpressionEncoder exprEnc = context.getExpressionEncoder();
         final ExpressionFactory exprs = context.getExpressionFactory();
         for (NonDetValue value : context.getTask().getProgram().getConstants()) {
-            if (context.useIntegers && value.getType() instanceof IntegerType intType) {
-                // This special case is for when we encode BVs with integers.
-                final Expression min = exprs.makeValue(intType.getMinimumValue(value.isSigned()), intType);
-                final Expression max = exprs.makeValue(intType.getMaximumValue(value.isSigned()), intType);
-                final Expression constraints = exprs.makeAnd(
-                        exprs.makeGTE(value, min, value.isSigned()),
-                        exprs.makeLTE(value, max, value.isSigned())
-                );
-                enc.add(exprEnc.encodeBooleanFinal(constraints).formula());
-            }
+//            if (context.useIntegers && value.getType() instanceof IntegerType intType) {
+//                // This special case is for when we encode BVs with integers.
+//                final Expression min = exprs.makeValue(intType.getMinimumValue(value.isSigned()), intType);
+//                final Expression max = exprs.makeValue(intType.getMaximumValue(value.isSigned()), intType);
+//                final Expression constraints = exprs.makeAnd(
+//                        exprs.makeGTE(value, min, value.isSigned()),
+//                        exprs.makeLTE(value, max, value.isSigned())
+//                );
+//                enc.add(exprEnc.encodeBooleanFinal(constraints).formula());
+//            }
         }
         return context.getBooleanFormulaManager().and(enc);
     }

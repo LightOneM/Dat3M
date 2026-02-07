@@ -76,8 +76,8 @@ public abstract class AbstractComparisonTest {
         var configBase = Configuration.builder()
                 .setOption(SOLVER, Z3.name())
                 .setOption(PHANTOM_REFERENCES, "true")
-                .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "true");
+                .setOption(INITIALIZE_REGISTERS, "true");
+                //.setOption(USE_INTEGERS, "true");
 
         return additionalConfig(configBase).build();
     }

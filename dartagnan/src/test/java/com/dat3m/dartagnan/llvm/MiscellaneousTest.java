@@ -45,7 +45,7 @@ public class MiscellaneousTest extends AbstractCTest {
     @Override
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
         if (!name.equals("pthread") && !name.equals("ctlz") && !name.equals("cttz") && !name.equals("ffs")) {
-            builder.setOption(OptionNames.USE_INTEGERS, "true");
+            //builder.setOption(OptionNames.USE_INTEGERS, "true");
         }
         if (name.equals("recursion")) {
             builder.setOption(OptionNames.RECURSION_BOUND, String.valueOf(bound));
