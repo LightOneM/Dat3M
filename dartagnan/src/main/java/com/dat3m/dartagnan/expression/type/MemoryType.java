@@ -28,11 +28,17 @@ import com.google.common.base.Preconditions;
 public class MemoryType implements Type {
 
     private final int bitWidth;
+    private final boolean isSigned;
 
-    MemoryType(int bitWidth) {
+    MemoryType(int bitWidth, boolean isSigned) {
         Preconditions.checkArgument(bitWidth > 0, "Size for memory type must be positive: %s", bitWidth);
         Preconditions.checkArgument((bitWidth & 7) == 0, "Size must be a multiple of 8: %s", bitWidth);
         this.bitWidth = bitWidth;
+        this.isSigned = isSigned;
+    }
+
+    MemoryType(int bitWidth) {
+        this(bitWidth, false);
     }
 
     public int getBitWidth() {

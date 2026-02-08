@@ -43,8 +43,7 @@ public class EBRTest extends AbstractCTest {
 
     @Override
     protected ConfigurationBuilder additionalConfig(ConfigurationBuilder builder) {
-        return builder
-                .setOption(OptionNames.USE_INTEGERS, "false");
+        return builder;
     }
 
     @Parameterized.Parameters(name = "{index}: {0}, target={1}")

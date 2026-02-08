@@ -83,8 +83,7 @@ public abstract class AbstractCompilationTest {
                 .setOption(SOLVER, Z3.name())
                 .setOption(TARGET, targetProvider.get().name())
                 .setOption(PHANTOM_REFERENCES, "true")
-                .setOption(INITIALIZE_REGISTERS, "true")
-                .setOption(USE_INTEGERS, "true");
+                .setOption(INITIALIZE_REGISTERS, "true");
 
         return additionalConfig(configBase).build();
     }

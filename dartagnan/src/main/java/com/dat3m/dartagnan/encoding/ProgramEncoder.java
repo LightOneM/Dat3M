@@ -21,7 +21,6 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadReturn;
 import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
-import com.dat3m.dartagnan.program.misc.NonDetValue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
@@ -102,20 +101,6 @@ public class ProgramEncoder implements Encoder {
 
     public BooleanFormula encodeConstants() {
         List<BooleanFormula> enc = new ArrayList<>();
-        final ExpressionEncoder exprEnc = context.getExpressionEncoder();
-        final ExpressionFactory exprs = context.getExpressionFactory();
-        for (NonDetValue value : context.getTask().getProgram().getConstants()) {
-            if (context.useIntegers && value.getType() instanceof IntegerType intType) {
-                // This special case is for when we encode BVs with integers.
-                final Expression min = exprs.makeValue(intType.getMinimumValue(value.isSigned()), intType);
-                final Expression max = exprs.makeValue(intType.getMaximumValue(value.isSigned()), intType);
-                final Expression constraints = exprs.makeAnd(
-                        exprs.makeGTE(value, min, value.isSigned()),
-                        exprs.makeLTE(value, max, value.isSigned())
-                );
-                enc.add(exprEnc.encodeBooleanFinal(constraints).formula());
-            }
-        }
         return context.getBooleanFormulaManager().and(enc);
     }
 

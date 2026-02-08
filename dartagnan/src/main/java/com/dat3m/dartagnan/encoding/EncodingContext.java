@@ -76,10 +76,10 @@ public final class EncodingContext {
             secure = true)
     private boolean shouldMergeCFVars = true;
 
-    @Option(name = USE_INTEGERS,
-            description = "Data is encoded with mathematical integers instead of bitvectors.  Default: false.",
-            secure = true)
-    boolean useIntegers = false;
+//    @Option(name = USE_INTEGERS,
+//            description = "Data is encoded with mathematical integers instead of bitvectors.  Default: false.",
+//            secure = true)
+//    boolean useIntegers = false;
 
     // TODO: If we ever simplify floats, this option will play a role there besides than the encoding.
     // If that is the case we need to move this option outside of this encoding class.
