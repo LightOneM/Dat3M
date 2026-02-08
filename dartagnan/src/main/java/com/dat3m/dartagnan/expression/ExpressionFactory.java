@@ -631,13 +631,13 @@ public final class ExpressionFactory {
 
     public Expression makeBitwiseEQ(Expression leftOperand, Expression rightOperand) {
 
-        if (!(leftOperand.getType() instanceof MemoryType)){
-            return makeBitwiseEQ(makeToMemoryCast(leftOperand), rightOperand);
+        if (!(leftOperand.getType() instanceof IntegerType)){
+            return makeBitwiseEQ(makeCast(leftOperand,archType), rightOperand);
         }
-        if (!(rightOperand.getType() instanceof MemoryType)){
-            return makeBitwiseEQ(leftOperand, makeToMemoryCast(rightOperand));
+        if (!(rightOperand.getType() instanceof IntegerType)){
+            return makeBitwiseEQ(leftOperand, makeCast(rightOperand,archType));
         }
-        return makeMemoryEqualExpr(leftOperand, rightOperand);
+        return makeEQ(leftOperand, rightOperand);
     }
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
@@ -659,12 +659,11 @@ public final class ExpressionFactory {
 
 
     public Expression makeBitwiseNEQ(Expression leftOperand, Expression rightOperand) {
-        // casts both operands to archtype and compares them
-        if (leftOperand.getType() instanceof PointerType){
-            return makeBitwiseNEQ(makePtrToIntCast(leftOperand, archType), rightOperand);
+        if (!(leftOperand.getType() instanceof IntegerType)){
+            return makeBitwiseNEQ(makeCast(leftOperand,archType), rightOperand);
         }
-        if (rightOperand.getType() instanceof PointerType){
-            return makeBitwiseNEQ(leftOperand, makePtrToIntCast(rightOperand, archType));
+        if (!(rightOperand.getType() instanceof IntegerType)){
+            return makeBitwiseNEQ(leftOperand, makeCast(rightOperand,archType));
         }
         return makeNEQ(leftOperand, rightOperand);
     }

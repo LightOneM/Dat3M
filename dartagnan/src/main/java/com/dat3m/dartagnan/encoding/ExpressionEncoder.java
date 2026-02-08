@@ -455,7 +455,6 @@ public class ExpressionEncoder {
         public TypedFormula<PointerType, TupleFormula> visitIntToPtrCastExpression(IntToPtrCast expr) {
             final TypedFormula<IntegerType, BitvectorFormula> address = encodeIntegerExpr(expr.getOperand());
             return encodePointerExpr(factory.makeFromMemoryCast(factory.makeToMemoryCast(address),expr.getTargetType()));
-
         }
 
         @Override
