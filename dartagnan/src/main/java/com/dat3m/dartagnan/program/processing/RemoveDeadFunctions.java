@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.processing.ExpressionInspector;
@@ -17,6 +14,8 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.core.Local;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -32,7 +31,8 @@ public class RemoveDeadFunctions implements ProgramProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(RemoveDeadFunctions.class);
 
-    private RemoveDeadFunctions() { }
+    private RemoveDeadFunctions() {
+    }
 
     public static RemoveDeadFunctions newInstance() {
         return new RemoveDeadFunctions();
@@ -90,7 +90,9 @@ public class RemoveDeadFunctions implements ProgramProcessor {
         final List<HashSet<Register>> jumps = events.stream().map(e -> new HashSet<Register>()).toList();
         for (int i = events.size() - 1; i >= 0; i--) {
             Event event = events.get(i);
-            if (IRHelper.isAlwaysBranching(event)) { liveRegisters.clear(); }
+            if (IRHelper.isAlwaysBranching(event)) {
+                liveRegisters.clear();
+            }
             liveRegisters.addAll(jumps.get(i));
             if (event instanceof Label label) {
                 for (CondJump jump : label.getJumpSet()) {
@@ -132,7 +134,9 @@ public class RemoveDeadFunctions implements ProgramProcessor {
 
         private final Set<Function> collectedFunctions = new HashSet<>();
 
-        public void reset() { collectedFunctions.clear(); }
+        public void reset() {
+            collectedFunctions.clear();
+        }
 
         @Override
         public Expression visitFunction(Function function) {

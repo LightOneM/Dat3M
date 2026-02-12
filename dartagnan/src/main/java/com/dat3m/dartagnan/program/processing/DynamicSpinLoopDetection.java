@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.type.AggregateType;
@@ -13,12 +10,13 @@ import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.analysis.LiveRegistersAnalysis;
 import com.dat3m.dartagnan.program.analysis.LoopAnalysis;
 import com.dat3m.dartagnan.program.event.*;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 
 import java.util.ArrayList;
@@ -69,7 +67,7 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
         AnalysisStats stats = new AnalysisStats(0);
         for (Function func : Iterables.concat(program.getFunctions(), program.getThreads())) {
             final List<LoopData> loops = computeLoopData(func, loopAnalysis);
-            final LiveRegistersAnalysis liveRegsAna =  LiveRegistersAnalysis.forFunction(func);
+            final LiveRegistersAnalysis liveRegsAna = LiveRegistersAnalysis.forFunction(func);
             loops.forEach(loop -> this.collectSideEffects(loop, liveRegsAna));
             loops.forEach(this::instrumentLoop);
             stats = stats.add(collectStats(loops));
@@ -214,8 +212,13 @@ public class DynamicSpinLoopDetection implements ProgramProcessor {
             this.loopInfo = loopInfo;
         }
 
-        private Event getStart() { return loopInfo.iterations().get(0).getIterationStart(); }
-        private Event getEnd() { return loopInfo.iterations().get(0).getIterationEnd(); }
+        private Event getStart() {
+            return loopInfo.iterations().get(0).getIterationStart();
+        }
+
+        private Event getEnd() {
+            return loopInfo.iterations().get(0).getIterationEnd();
+        }
 
         @Override
         public String toString() {

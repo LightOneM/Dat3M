@@ -17,11 +17,11 @@ import com.dat3m.dartagnan.program.memory.ScopedPointerVariable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 
+import java.util.Stack;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static com.dat3m.dartagnan.expression.type.TypeFactory.isStaticTypeOf;
 
@@ -46,7 +46,8 @@ public final class ExpressionFactory {
     private final BoolLiteral falseConstant = new BoolLiteral(booleanType, false);
     private final BoolLiteral trueConstant = new BoolLiteral(booleanType, true);
 
-    private ExpressionFactory() {}
+    private ExpressionFactory() {
+    }
 
     public static ExpressionFactory getInstance() {
         return instance;
@@ -93,7 +94,7 @@ public final class ExpressionFactory {
             return operand;
         } else if (sourceType instanceof IntegerType intType) {
             return makeNEQ(operand, makeZero(intType));
-        }else if (sourceType instanceof PointerType) {
+        } else if (sourceType instanceof PointerType) {
             return makeBooleanCast(makePtrToIntCast(operand, archType));
         }
         throw new UnsupportedOperationException(String.format("Cannot cast %s to %s.", sourceType, booleanType));
@@ -134,30 +135,18 @@ public final class ExpressionFactory {
     }
 
     public Expression makeLT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpfromInts(leftOperand,IntCmpOp.ULT,rightOperand);
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LT : IntCmpOp.ULT, rightOperand);
     }
 
     public Expression makeGT(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpfromInts(leftOperand,IntCmpOp.UGT,rightOperand);
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GT : IntCmpOp.UGT, rightOperand);
     }
 
     public Expression makeLTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpfromInts(leftOperand,IntCmpOp.ULTE,rightOperand);
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.LTE : IntCmpOp.ULTE, rightOperand);
     }
 
     public Expression makeGTE(Expression leftOperand, Expression rightOperand, boolean signed) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpfromInts(leftOperand,IntCmpOp.UGTE,rightOperand);
-        }
         return makeIntCmp(leftOperand, signed ? IntCmpOp.GTE : IntCmpOp.UGTE, rightOperand);
     }
 
@@ -229,27 +218,7 @@ public final class ExpressionFactory {
         return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
     }
 
-    public Expression makeIntCmpfromInts(Expression leftOperand, IntCmpOp operator, Expression rightOperand) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntCmpfromInts(makePtrToIntCast(leftOperand, archType), operator, rightOperand);
-        }
-        if (rightOperand.getType() instanceof PointerType){
-            return makeIntCmpfromInts(leftOperand, operator, makePtrToIntCast(rightOperand, archType));
-        }
-        return new IntCmpExpr(types.getBooleanType(), leftOperand, operator, rightOperand);
-    }
-
     public Expression makeIntBinary(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
-        return new IntBinaryExpr(leftOperand, operator, rightOperand);
-    }
-
-    public Expression makeIntBinaryfromInts(Expression leftOperand, IntBinaryOp operator, Expression rightOperand) {
-        if (leftOperand.getType() instanceof PointerType){
-            return makeIntBinaryfromInts(makePtrToIntCast(leftOperand, archType), operator, rightOperand);
-        }
-        if (rightOperand.getType() instanceof PointerType){
-            return makeIntBinaryfromInts(leftOperand, operator, makePtrToIntCast(rightOperand, archType));
-        }
         return new IntBinaryExpr(leftOperand, operator, rightOperand);
     }
 
@@ -262,7 +231,7 @@ public final class ExpressionFactory {
             return sourceType.equals(targetType) ? operand : new IntSizeCast(targetType, operand, signed);
         } else if (sourceType instanceof FloatType) {
             return new FloatToIntCast(targetType, operand, signed);
-        }else if (sourceType instanceof PointerType) {
+        } else if (sourceType instanceof PointerType) {
             return makePtrToIntCast(operand, targetType);
         }
 
@@ -276,8 +245,60 @@ public final class ExpressionFactory {
         return makeValue(BigDecimal.ZERO, type);
     }
 
+    public FloatLiteral makePlusInf(FloatType type) {
+        return new FloatLiteral(type, BigDecimal.valueOf(1), false, true);
+    }
+
+    public FloatLiteral makeMinusInf(FloatType type) {
+        return new FloatLiteral(type, BigDecimal.valueOf(-1), false, true);
+    }
+
+    public FloatLiteral makeNan(FloatType type) {
+        return new FloatLiteral(type, null, true, false);
+    }
+
     public FloatLiteral makeValue(BigDecimal value, FloatType type) {
         return new FloatLiteral(type, value, false, false);
+    }
+
+    public Expression makeOLT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OLT, rightOperand);
+    }
+
+    public Expression makeOGT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OGT, rightOperand);
+    }
+
+    public Expression makeOLTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OLTE, rightOperand);
+    }
+
+    public Expression makeOGTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.OGTE, rightOperand);
+    }
+
+    public Expression makeORD(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.ORD, rightOperand);
+    }
+
+    public Expression makeULT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.ULT, rightOperand);
+    }
+
+    public Expression makeUGT(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.UGT, rightOperand);
+    }
+
+    public Expression makeULTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.ULTE, rightOperand);
+    }
+
+    public Expression makeUGTE(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.UGTE, rightOperand);
+    }
+
+    public Expression makeUNO(Expression leftOperand, Expression rightOperand) {
+        return makeFloatCmp(leftOperand, FloatCmpOp.UNO, rightOperand);
     }
 
     public Expression makeFAdd(Expression x, Expression y) {
@@ -300,8 +321,20 @@ public final class ExpressionFactory {
         return new FloatBinaryExpr(x, FloatBinaryOp.FREM, y);
     }
 
+    public Expression makeFMin(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FMIN, y);
+    }
+
+    public Expression makeFMax(Expression x, Expression y) {
+        return new FloatBinaryExpr(x, FloatBinaryOp.FMAX, y);
+    }
+
     public Expression makeFNeg(Expression expr) {
         return new FloatUnaryExpr(FloatUnaryOp.NEG, expr);
+    }
+
+    public Expression makeFAbs(Expression expr) {
+        return new FloatUnaryExpr(FloatUnaryOp.FABS, expr);
     }
 
     public Expression makeFloatUnary(FloatUnaryOp op, Expression expr) {
@@ -330,40 +363,35 @@ public final class ExpressionFactory {
 
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregates
-    private List<Type> unpackTypeHelper(Type type){
-        if(type instanceof AggregateType ag){
-            return ag.getFields().stream().map(TypeOffset::type).toList();
-        }
-        if(type instanceof ArrayType ar){
-            return new ArrayList<>(Collections.nCopies(ar.getNumElements(),ar.getElementType()));
-        }
-        return List.of(type);
-    }
-    public List<Type> unpackTypes(List<Type> type){
-        List<Type> newResult = type.stream().map(this::unpackTypeHelper).flatMap(List::stream).toList();
-        List<Type> oldResult = type;
-        while(!newResult.equals(oldResult)){
-            // fixme way simpler using recursion!
-            oldResult = newResult;
-            newResult = type.stream().map(this::unpackTypeHelper).flatMap(List::stream).toList();
-        }
-        return newResult;
-    }
-    public List<Type> unpackType(Type type){
-        List<Type> list = List.of(type);
-        return unpackTypes(list);
-    }
 
     public Expression makeConstruct(Type type, List<? extends Expression> arguments) {
         return new ConstructExpr(type, arguments);
     }
+
     public Expression makeCompatibilityConstruct(Type type, List<? extends Expression> arguments) {
         assert ExpressionHelper.isAggregateLike(type);
-        List<Type> types = unpackType(type);
+        List<Type> types = new ArrayList<>();
+        Stack<Type> stack = new Stack<>();
+        stack.push(type);
+        while (!stack.isEmpty()) {
+            Type t = stack.pop();
+            if (t instanceof AggregateType ag) {
+                for (TypeOffset f : ag.getFields()) {
+                    stack.push(f.type());
+                }
+            } else if (t instanceof ArrayType ar) {
+                for (int i = 0; i < ar.getNumElements(); i++) {
+                    stack.push(ar.getElementType());
+                }
+            } else {
+                types.add(t);
+            }
+        }
+        Collections.reverse(types);
         List<Expression> newArguments = new ArrayList<>();
         assert types.size() == arguments.size();
         for (int i = 0; i < types.size(); ++i) {
-            newArguments.add(makeCast(arguments.get(i),types.get(i)));
+            newArguments.add(makeCast(arguments.get(i), types.get(i)));
         }
         return new ConstructExpr(type, newArguments);
     }
@@ -411,19 +439,19 @@ public final class ExpressionFactory {
     // Pointers
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets) {
-        Preconditions.checkArgument(base.getType() instanceof  PointerType,
+        Preconditions.checkArgument(base.getType() instanceof PointerType,
                 "Applying offsets to non-pointer expression.");
-        return new GEPExpr(indexingType, base, offsets,null);
+        return new GEPExpr(indexingType, base, offsets, null);
     }
 
     public Expression makeGetElementPointer(Type indexingType, Expression base, List<Expression> offsets, Integer stride) {
         // TODO: Stride should be a property of the pointer, not of a GEPExpr.
         //  Refactor GEPExpr to only accept a (new) PointerType and a list of offsets.
         //  A PointerType should have the referred type and the stride in its attributes.
-        Preconditions.checkArgument(base.getType() instanceof  PointerType,
+        Preconditions.checkArgument(base.getType() instanceof PointerType,
                 "Applying offsets to non-pointer expression.");
         Preconditions.checkArgument(stride == null || stride >= types.getMemorySizeInBytes(indexingType),
-        "Stride cannot be smaller than indexing type");
+                "Stride cannot be smaller than indexing type");
         return new GEPExpr(indexingType, base, offsets, stride);
     }
 
@@ -439,39 +467,42 @@ public final class ExpressionFactory {
         return new PtrAddExpr(base, offset);
     }
 
-    public Expression makePtrCast(Expression base, PointerType type){
-        if (base.getType() instanceof PointerType){
+    public Expression makePtrCast(Expression base, PointerType type) {
+        if (base.getType() instanceof PointerType) {
             if (base.getType().equals(type)) {
                 return base;
-            // pointers of different size than arch should not be used (store | load). Comparison is still possible in wmm.
-            }else{
+                // pointers of different size than arch should not be used (store | load). Comparison is still possible in wmm.
+            } else {
                 // we use this because spirv has some weird casts between scoped pointers.
                 // not the most elegant solution, maybe a dedicated ptr size/type cast?
                 return makeIntToPtrCast(makePtrToIntCast(base, types.getIntegerType(type.bitWidth)), type);
-        }}
+            }
+        }
         if (base.getType() instanceof IntegerType) {
             return makeIntToPtrCast(base, type);
         }
         if (base.getType() instanceof BooleanType) {
-            return makePtrCast(makeIntegerCast(base, archType,false),type);
+            return makePtrCast(makeIntegerCast(base, archType, false), type);
         }
-        throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.",base));
+        throw new UnsupportedOperationException(String.format("Cast %s into pointer unsupported.", base));
     }
-
 
 
     public Expression makePtrToIntCast(Expression pointer, IntegerType type) {
         return new PtrToIntCast(type, pointer);
+    }
+    public Expression makePtrToIntCast(Expression pointer) {
+        return makePtrToIntCast(pointer, archType);
     }
 
 
     public Expression makeIntToPtrCast(Expression integer, PointerType pointerType) {
         return new IntToPtrCast(pointerType, integer);
     }
-    public Expression makeIntToPtrCast(Expression operand) {
-        return makeIntToPtrCast(operand,pointerType);
-    }
 
+    public Expression makeIntToPtrCast(Expression operand) {
+        return makeIntToPtrCast(operand, pointerType);
+    }
 
 
     public Expression makeNullLiteral(PointerType pointerType) {
@@ -523,8 +554,6 @@ public final class ExpressionFactory {
     public Expression makeMemoryExtend(Expression operand, MemoryType targetType) {
         return new MemoryExtend(targetType, operand);
     }
-
-
 
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -582,19 +611,22 @@ public final class ExpressionFactory {
             return makeToMemoryCast(makeZero(types.getIntegerType(memoryType.getBitWidth())));
         } else if (type instanceof PointerType pt) {
             return makeNullLiteral(pt);
-        }else{
+        } else {
             throw new UnsupportedOperationException("Cannot create zero of type " + type);
         }
     }
 
     public Expression makeCast(Expression expression, Type type, boolean signed) {
-        if (expression.getType().equals(type)) {return expression;}
-        if (type instanceof BooleanType) {return makeBooleanCast(expression);}
-        else if (type instanceof IntegerType integerType) {
+        if (expression.getType().equals(type)) {
+            return expression;
+        }
+        if (type instanceof BooleanType) {
+            return makeBooleanCast(expression);
+        } else if (type instanceof IntegerType integerType) {
             return makeIntegerCast(expression, integerType, signed);
         } else if (type instanceof FloatType floatType) {
             return makeFloatCast(expression, floatType, signed);
-        }else if (type instanceof PointerType) {
+        } else if (type instanceof PointerType) {
             return makePtrCast(expression, (PointerType) type);
         }
         throw new UnsupportedOperationException(String.format("Cast %s into %s unsupported.", expression, type));
@@ -609,12 +641,14 @@ public final class ExpressionFactory {
     }
 
     public Expression makeEQ(Expression leftOperand, Expression rightOperand) {
+        assert leftOperand.getType().equals(rightOperand.getType());
         final Type type = leftOperand.getType();
         if (type instanceof BooleanType) {
             return makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand);
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.EQ, rightOperand);
-        } if (type instanceof PointerType) {
+        }
+        if (type instanceof PointerType) {
             return makePtrCmp(leftOperand, PtrCmpOp.EQ, rightOperand);
         } else if (type instanceof FloatType) {
             // TODO: Decide on a default semantics for float equality?
@@ -627,43 +661,30 @@ public final class ExpressionFactory {
         throw new UnsupportedOperationException("Equality not supported on type: " + type);
     }
 
-    public Expression makeBitwiseEQ(Expression leftOperand, Expression rightOperand) {
-
-        if (!(leftOperand.getType() instanceof IntegerType)){
-            return makeBitwiseEQ(makeCast(leftOperand,archType), rightOperand);
-        }
-        if (!(rightOperand.getType() instanceof IntegerType)){
-            return makeBitwiseEQ(leftOperand, makeCast(rightOperand,archType));
-        }
-        return makeEQ(leftOperand, rightOperand);
+    public Expression makeFEQ(Expression leftOperand, Expression rightOperand, boolean ordered) {
+        return makeFloatCmp(leftOperand, ordered ? FloatCmpOp.OEQ : FloatCmpOp.UEQ, rightOperand);
     }
 
     public Expression makeNEQ(Expression leftOperand, Expression rightOperand) {
+        assert leftOperand.getType().equals(rightOperand.getType());
         final Type type = leftOperand.getType();
         if (type instanceof BooleanType) {
             return makeNot(makeBoolBinary(leftOperand, BoolBinaryOp.IFF, rightOperand));
         } else if (type instanceof IntegerType) {
             return makeIntCmp(leftOperand, IntCmpOp.NEQ, rightOperand);
-        } if (type instanceof PointerType) {
+        }
+        if (type instanceof PointerType) {
             return makePtrCmp(leftOperand, PtrCmpOp.NEQ, rightOperand);
-        }else if (type instanceof FloatType) {
-            // TODO: Decide on a default semantics for float equality?
-            return makeFloatCmp(leftOperand, FloatCmpOp.ONEQ, rightOperand);
+        } else if (type instanceof FloatType) {
+            return makeFloatCmp(leftOperand, FloatCmpOp.NEQ, rightOperand);
         } else if (type instanceof AggregateType) {
             return makeAggregateCmp(leftOperand, AggregateCmpOp.NEQ, rightOperand);
         }
         throw new UnsupportedOperationException("Disequality not supported on type: " + type);
     }
 
-
-    public Expression makeBitwiseNEQ(Expression leftOperand, Expression rightOperand) {
-        if (!(leftOperand.getType() instanceof IntegerType)){
-            return makeBitwiseNEQ(makeCast(leftOperand,archType), rightOperand);
-        }
-        if (!(rightOperand.getType() instanceof IntegerType)){
-            return makeBitwiseNEQ(leftOperand, makeCast(rightOperand,archType));
-        }
-        return makeNEQ(leftOperand, rightOperand);
+    public Expression makeFNEQ(Expression leftOperand, Expression rightOperand, boolean ordered) {
+        return makeFloatCmp(leftOperand, ordered ? FloatCmpOp.ONEQ : FloatCmpOp.UNEQ, rightOperand);
     }
 
     public Expression makeUnary(ExpressionKind op, Expression expr) {
@@ -686,7 +707,7 @@ public final class ExpressionFactory {
             return makeFloatBinary(x, floatOp, y);
         } else if (op instanceof IntCmpOp cmpOp) {
             return makeCompare(x, cmpOp, y);
-        }else if (op instanceof PtrCmpOp cmpOp) {
+        } else if (op instanceof PtrCmpOp cmpOp) {
             return makeCompare(x, cmpOp, y);
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no binary operator.", op));
@@ -699,7 +720,7 @@ public final class ExpressionFactory {
             return makeFloatCmp(x, floatOp, y);
         } else if (cmpOp instanceof AggregateCmpOp aggrCmpOp) {
             return makeAggregateCmp(x, aggrCmpOp, y);
-        }else if (cmpOp instanceof PtrCmpOp ptrCmpOp) {
+        } else if (cmpOp instanceof PtrCmpOp ptrCmpOp) {
             return makePtrCmp(x, ptrCmpOp, y);
         }
         throw new UnsupportedOperationException(String.format("Expression kind %s is no comparison operator.", cmpOp));

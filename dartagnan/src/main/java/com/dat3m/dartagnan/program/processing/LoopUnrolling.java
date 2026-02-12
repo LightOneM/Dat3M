@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Function;
 import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Program;
@@ -16,12 +13,13 @@ import com.dat3m.dartagnan.program.event.core.Label;
 import com.dat3m.dartagnan.program.event.lang.svcomp.LoopBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingBound;
 import com.dat3m.dartagnan.program.event.metadata.UnrollingId;
+
 import com.google.common.base.Preconditions;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.*;
 
 import java.io.FileReader;
@@ -160,7 +158,7 @@ public class LoopUnrolling implements ProgramProcessor {
         }
 
         // Merge with loaded bounds if those exist.
-        if(globalLoopBoundsMap.containsKey(func)) {
+        if (globalLoopBoundsMap.containsKey(func)) {
             final Map<CondJump, Integer> loopBoundsMapFromFile = globalLoopBoundsMap.get(func);
             loopBoundsMapFromFile.forEach((key, value) -> loopBoundsMap.merge(key, value, Math::max));
         }
@@ -215,7 +213,7 @@ public class LoopUnrolling implements ProgramProcessor {
                 }
 
                 // Rename label of iteration.
-                final Label loopBeginCopy = ((Label)copyCtx.get(loopBegin));
+                final Label loopBeginCopy = ((Label) copyCtx.get(loopBegin));
                 loopBeginCopy.setName(loopId);
                 loopBeginCopy.addTags(Tag.NOOPT);
             }
@@ -284,7 +282,7 @@ public class LoopUnrolling implements ProgramProcessor {
         }
 
         final SyntacticContextAnalysis synContext = SyntacticContextAnalysis.newInstance(program);
-        try (CSVPrinter csvPrinter = new CSVPrinter( new FileWriter(filePath, false), CSVFormat.DEFAULT)) {
+        try (CSVPrinter csvPrinter = new CSVPrinter(new FileWriter(filePath, false), CSVFormat.DEFAULT)) {
             for (Map<CondJump, Integer> loopBoundsMap : loopBounds.values()) {
                 for (Map.Entry<CondJump, Integer> entry : loopBoundsMap.entrySet()) {
                     final CondJump loopJump = entry.getKey();

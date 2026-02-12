@@ -1,6 +1,5 @@
 package com.dat3m.dartagnan.verification.solving;
 
-
 import com.dat3m.dartagnan.GlobalSettings;
 import com.dat3m.dartagnan.configuration.Method;
 import com.dat3m.dartagnan.configuration.Property;
@@ -26,6 +25,7 @@ import com.dat3m.dartagnan.wmm.Wmm;
 import com.dat3m.dartagnan.wmm.analysis.RelationAnalysis;
 import com.dat3m.dartagnan.wmm.analysis.WmmAnalysis;
 import com.dat3m.dartagnan.wmm.processing.WmmProcessingManager;
+
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,7 +211,7 @@ public abstract class ModelChecker implements AutoCloseable {
         ProcessingManager.fromConfig(config).run(program);
     }
 
-    public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException{
+    public static void preprocessMemoryModel(VerificationTask task, Configuration config) throws InvalidConfigurationException {
         final Wmm memoryModel = task.getMemoryModel();
         WmmProcessingManager.fromConfig(config).run(memoryModel);
     }
@@ -227,8 +227,8 @@ public abstract class ModelChecker implements AutoCloseable {
         analysisContext.register(AliasAnalysis.class, alias);
         analysisContext.register(ThreadSymmetry.class, ThreadSymmetry.fromConfig(program, config));
 
-        for(Thread thread : program.getThreads()) {
-            for(Event e : thread.getEvents()) {
+        for (Thread thread : program.getThreads()) {
+            for (Event e : thread.getEvents()) {
                 // Some events perform static analyses by themselves (e.g. Svcomp's EndAtomic)
                 // which may rely on previous "global" analyses
                 e.runLocalAnalysis(program, analysisContext);

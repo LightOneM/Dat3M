@@ -1,15 +1,13 @@
 package com.dat3m.dartagnan.wmm;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.event.Tag;
 import com.dat3m.dartagnan.program.filter.Filter;
 import com.dat3m.dartagnan.wmm.axiom.Axiom;
 import com.dat3m.dartagnan.wmm.definition.*;
+
 import com.google.common.collect.ImmutableSet;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
@@ -35,7 +33,9 @@ public class Wmm {
                 secure = true)
         private boolean reduceAcyclicityEncoding = true;
 
-        public boolean isReduceAcyclicityEncoding() { return reduceAcyclicityEncoding; }
+        public boolean isReduceAcyclicityEncoding() {
+            return reduceAcyclicityEncoding;
+        }
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Wmm.class);
@@ -55,7 +55,9 @@ public class Wmm {
         ANARCHIC_CORE_RELATIONS.forEach(this::getOrCreatePredefinedRelation);
     }
 
-    public Config getConfig() { return this.config; }
+    public Config getConfig() {
+        return this.config;
+    }
 
     public List<Constraint> getConstraints() {
         return Stream.concat(constraints.stream(), relations.stream().map(Relation::getDefinition)).toList();

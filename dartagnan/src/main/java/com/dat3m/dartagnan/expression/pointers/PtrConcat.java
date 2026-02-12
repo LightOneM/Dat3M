@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
+/* Now that we have a memory type that supports tearing, this class is redundant */
 public class PtrConcat extends NaryExpressionBase<PointerType, ExpressionKind.Other> {
 
     public PtrConcat(List<? extends Expression> operands) {
@@ -21,7 +22,7 @@ public class PtrConcat extends NaryExpressionBase<PointerType, ExpressionKind.Ot
         int size = 0;
         for (Expression op : operands) {
             ExpressionHelper.checkExpectedType(op, PointerType.class);
-            size += ((PointerType)op.getType()).getBitWidth();
+            size += ((PointerType) op.getType()).getBitWidth();
         }
         return TypeFactory.getInstance().getPointerType(size);
     }

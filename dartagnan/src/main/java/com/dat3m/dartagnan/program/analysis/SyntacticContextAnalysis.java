@@ -1,17 +1,16 @@
 package com.dat3m.dartagnan.program.analysis;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
 import com.dat3m.dartagnan.program.event.core.annotations.FunCallMarker;
 import com.dat3m.dartagnan.program.event.core.annotations.FunReturnMarker;
 import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -171,7 +170,7 @@ public class SyntacticContextAnalysis {
                     // FIXME: DCE can sometimes delete the end marker of functions if those never return
                     //  (e.g., "reach_error() { abort(0); }").
                     //  Here we try to also pop those calls that have missing markers.
-                    if(curContextStack.peek() instanceof CallContext) {
+                    if (curContextStack.peek() instanceof CallContext) {
                         topCallCtx = (CallContext) curContextStack.pop();
                     } else {
                         logger.warn("Found a FunCallMarker without a matching FunReturnMarker. Giving up the analysis");

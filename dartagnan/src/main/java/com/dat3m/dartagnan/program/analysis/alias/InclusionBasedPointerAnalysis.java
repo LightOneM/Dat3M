@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.analysis.alias;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionVisitor;
 import com.dat3m.dartagnan.expression.aggregates.ConstructExpr;
@@ -23,10 +20,12 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadArgument;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
 import com.dat3m.dartagnan.witness.graphviz.Graphviz;
+
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.math.IntMath;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.util.*;
@@ -112,7 +111,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // ================================ Debugging ================================
 
     private record IntPair(int x, int y) {
-        @Override public String toString() {return x + "," + y;}
+        @Override
+        public String toString() {
+            return x + "," + y;
+        }
     }
 
     // Count inclusion tests grouped by complexity.
@@ -270,7 +272,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     }
 
     private void fetchAllMixedOffsets(Set<Integer> xSet, Modifier xModifier, int xBytes,
-            Set<Integer> ySet, Modifier yModifier, int yBytes) {
+                                      Set<Integer> ySet, Modifier yModifier, int yBytes) {
         fetchMixedOffsets(xSet, xModifier, xBytes, yModifier, yBytes);
         fetchMixedOffsets(ySet, yModifier, yBytes, xModifier, xBytes);
     }
@@ -332,7 +334,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     private void processWriter(RegWriter event) {
         logger.trace("{}", event);
         final Expression expr = event instanceof Local local ? local.getExpr() :
-                        event instanceof ThreadArgument arg ? arg.getCreator().getArguments().get(arg.getIndex()) :
+                event instanceof ThreadArgument arg ? arg.getCreator().getArguments().get(arg.getIndex()) :
                         event instanceof Alloc alloc ? alloc.getAllocatedObject() : null;
         final DerivedVariable value;
         if (expr != null) {
@@ -538,23 +540,33 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         private final DerivedVariable[] aggregate;
         // For visualization.
         private final String name;
+
         private Variable(MemoryObject o, DerivedVariable[] a, String n) {
             object = o;
             aggregate = a;
             name = n;
         }
-        @Override public String toString() { return name; }
+
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 
-    private record IncludeEdge(Variable source, Modifier modifier) {}
+    private record IncludeEdge(Variable source, Modifier modifier) {
+    }
 
-    private record LoadEdge(Variable result, Modifier addressModifier) {}
+    private record LoadEdge(Variable result, Modifier addressModifier) {
+    }
 
-    private record StoreEdge(DerivedVariable value, Modifier addressModifier) {}
+    private record StoreEdge(DerivedVariable value, Modifier addressModifier) {
+    }
 
-    private record Modifier(int offset, List<Integer> alignment) {}
+    private record Modifier(int offset, List<Integer> alignment) {
+    }
 
-    private record DerivedVariable(Variable base, Modifier modifier) {}
+    private record DerivedVariable(Variable base, Modifier modifier) {
+    }
 
     private static boolean isConstant(Modifier modifier) {
         return modifier.alignment.isEmpty();
@@ -830,18 +842,18 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         mem[0] = true;
         for (int j = 1; j < mem.length; j++) {
             for (final Integer i : left.alignment) {
-                if (j - i/gcd >= 0 && mem[j - i/gcd]) {
+                if (j - i / gcd >= 0 && mem[j - i / gcd]) {
                     mem[j] = true;
                     break;
                 }
             }
         }
         for (final Integer j : right.alignment) {
-            if (!mem[j/gcd]) {
+            if (!mem[j / gcd]) {
                 return false;
             }
         }
-        return mem[Math.abs(offset)/gcd];
+        return mem[Math.abs(offset) / gcd];
     }
 
     // Checks if there may be some common value in both sets.
@@ -1016,6 +1028,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
                     edges.add(new IncludeEdge(getPhiNodeVariable(register, reader).base, RELAXED_MODIFIER));
                     return register;
                 }
+
                 @Override
                 public Expression visitMemoryObject(MemoryObject object) {
                     edges.add(new IncludeEdge(objectVariables.get(object), RELAXED_MODIFIER));
@@ -1025,7 +1038,8 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
             return edges;
         }
 
-        record ExprFlip(Expression expr, int factor) {}
+        record ExprFlip(Expression expr, int factor) {
+        }
 
         @Override
         public List<IncludeEdge> visitPtrAddExpression(PtrAddExpr expr) {
@@ -1110,10 +1124,10 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         }
 
         private boolean matchByteExpression(ExprFlip operand, Stack<ExprFlip> stack) {
-            if (operand.expr instanceof IntBinaryExpr ) {
+            if (operand.expr instanceof IntBinaryExpr) {
                 return matchLinearExpression(operand, stack);
             }
-            if (operand.expr instanceof PtrAddExpr ) {
+            if (operand.expr instanceof PtrAddExpr) {
                 return matchPtrAddExpression(operand, stack);
             }
             return false;
@@ -1123,6 +1137,7 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
         public List<IncludeEdge> visitIntToPtrCastExpression(IntToPtrCast expr) {
             return expr.getOperand().accept(this);
         }
+
         @Override
         public List<IncludeEdge> visitPtrToIntCastExpression(PtrToIntCast expr) {
             return expr.getOperand().accept(this);
@@ -1201,9 +1216,9 @@ public class InclusionBasedPointerAnalysis implements AliasAnalysis {
     // Red edges connect address variables to stored value variables.
     // Green-labeled nodes represent memory objects.
     // Red-labeled nodes are address variables that do not include any memory objects (probably a bug).
-    private void  generateGraph() {
+    private void generateGraph() {
         final Set<Variable> seen = new HashSet<>(objectVariables.values());
-        for (Set<Variable> news = seen; !news.isEmpty();) {
+        for (Set<Variable> news = seen; !news.isEmpty(); ) {
             final var next = new HashSet<Variable>();
             for (final Variable v : news) {
                 next.addAll(v.seeAlso);

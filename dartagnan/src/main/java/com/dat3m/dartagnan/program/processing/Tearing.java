@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -28,9 +25,10 @@ import com.dat3m.dartagnan.program.event.metadata.SourceLocation;
 import com.dat3m.dartagnan.program.memory.FinalMemoryValue;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.verification.Context;
+
 import com.google.common.collect.Ordering;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -266,6 +264,7 @@ public final class Tearing implements ProgramProcessor {
         }
         throw new UnsupportedOperationException(String.format(message, event));
     }
+
     private PointerType checkPointerType(Type type, String message, Event event) {
         if (type instanceof PointerType t) {
             return t;
@@ -318,7 +317,7 @@ public final class Tearing implements ProgramProcessor {
             final int begin = value.getOffset();
             final int end = begin + types.getMemorySizeInBytes(value.getType());
             final List<Expression> result = new ArrayList<>();
-            for (int offset = begin; offset < end;) {
+            for (int offset = begin; offset < end; ) {
                 final Type t = typesByOffset.get(offset);
                 result.add(new FinalMemoryValue(value.getName(), t, value.getMemoryObject(), offset));
                 offset += types.getMemorySizeInBytes(t);

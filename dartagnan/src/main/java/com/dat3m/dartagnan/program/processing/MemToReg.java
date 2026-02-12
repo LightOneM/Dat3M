@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
 import com.dat3m.dartagnan.expression.Type;
@@ -16,9 +13,10 @@ import com.dat3m.dartagnan.program.IRHelper;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.event.*;
 import com.dat3m.dartagnan.program.event.core.*;
+
 import com.google.common.collect.Maps;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -150,7 +148,7 @@ public class MemToReg implements FunctionProcessor {
     }
 
     private List<Event> promoteAccess(MemoryCoreEvent event, AddressOffset access,
-            Map<RegWriter, Promotable> promotableObjects) {
+                                      Map<RegWriter, Promotable> promotableObjects) {
         final Promotable object = access == null ? null : promotableObjects.get(access.base);
         final Type accessType = event.getAccessType();
         final int accessSize = types.getMemorySizeInBytes(accessType);
@@ -230,7 +228,8 @@ public class MemToReg implements FunctionProcessor {
         }
     }
 
-    private sealed interface AddressOffsets {}
+    private sealed interface AddressOffsets {
+    }
 
     // Invariant: base != null
     private record AddressOffset(RegWriter base, long offset) implements AddressOffsets {
@@ -240,7 +239,8 @@ public class MemToReg implements FunctionProcessor {
     }
 
     // Invariant: hint != null && !hint.isEmpty()
-    private record AddressOffsetSet(Set<RegWriter> hint) implements AddressOffsets {}
+    private record AddressOffsetSet(Set<RegWriter> hint) implements AddressOffsets {
+    }
 
     // Checks if mixed-size accesses to a promotable object were collected.
     private static boolean hasMixedAccesses(Set<Field> registerTypes) {
@@ -422,7 +422,8 @@ public class MemToReg implements FunctionProcessor {
             }
         }
 
-        private record RegisterOffset(Register register, long offset) {}
+        private record RegisterOffset(Register register, long offset) {
+        }
 
         private AddressOffset computeAddressOffsetFromState(Expression expression) {
             final RegisterOffset gep = matchGEP(expression);

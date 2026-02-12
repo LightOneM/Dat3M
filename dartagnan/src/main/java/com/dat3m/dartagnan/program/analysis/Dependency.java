@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.analysis;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Register;
 import com.dat3m.dartagnan.program.Thread;
@@ -11,10 +8,11 @@ import com.dat3m.dartagnan.program.event.RegReader;
 import com.dat3m.dartagnan.program.event.RegWriter;
 import com.dat3m.dartagnan.program.event.core.CondJump;
 import com.dat3m.dartagnan.verification.Context;
+
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 
@@ -68,7 +66,7 @@ public final class Dependency implements ReachingDefinitionsAnalysis {
     /**
      * Queries the collection of providers for a variable, given a certain state of the program.
      *
-     * @param reader   Event containing some computation over values of the register space.
+     * @param reader Event containing some computation over values of the register space.
      * @return Local result of this analysis.
      */
     @Override
@@ -111,7 +109,7 @@ public final class Dependency implements ReachingDefinitionsAnalysis {
             //collecting all register dependencies
             Set<Register> registers = new HashSet<>();
             if (event instanceof RegReader regReader) {
-                regReader.getRegisterReads().forEach( read -> registers.add(read.register()));
+                regReader.getRegisterReads().forEach(read -> registers.add(read.register()));
             }
 
             if (!registers.isEmpty()) {

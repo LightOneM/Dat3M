@@ -70,7 +70,7 @@ public class MemoryObject extends LeafExpressionBase<PointerType> {
     public Set<String> getFeatureTags() { return featureTags; }
 
     public Expression size() { return size; }
-    public boolean hasKnownSize() { return size instanceof IntLiteral;}
+    public boolean hasKnownSize() { return size instanceof IntLiteral; }
     public int getKnownSize() {
         Preconditions.checkState(hasKnownSize(), "Cannot call method getKnownSize() for object %s with unknown size", this);
         return ((IntLiteral)size).getValueAsInt();
@@ -80,7 +80,7 @@ public class MemoryObject extends LeafExpressionBase<PointerType> {
     public boolean hasKnownAlignment() { return alignment instanceof IntLiteral; }
     public int getKnownAlignment() {
         Preconditions.checkState(hasKnownAlignment());
-        return ((IntLiteral)alignment).getValueAsInt();
+        return ((IntLiteral) alignment).getValueAsInt();
     }
 
     public boolean isInRange(int offset) {
@@ -120,7 +120,8 @@ public class MemoryObject extends LeafExpressionBase<PointerType> {
         } else if (value.getType() instanceof IntegerType
                 || value.getType() instanceof BooleanType
                 || value.getType() instanceof MemoryType
-                || value.getType() instanceof PointerType) {
+                || value.getType() instanceof PointerType
+                || value.getType() instanceof FloatType) {
             checkArgument(isInRange(offset), "array index out of bounds");
             initialValues.put(offset, value);
         } else {

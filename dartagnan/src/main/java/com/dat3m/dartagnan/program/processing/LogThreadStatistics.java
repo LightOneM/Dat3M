@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.program.processing;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.program.Program;
 import com.dat3m.dartagnan.program.Thread;
 import com.dat3m.dartagnan.program.event.Event;
@@ -13,6 +10,8 @@ import com.dat3m.dartagnan.program.event.core.Store;
 import com.dat3m.dartagnan.program.event.core.annotations.CodeAnnotation;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -20,9 +19,12 @@ public class LogThreadStatistics implements ProgramProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(LogThreadStatistics.class);
 
-    private LogThreadStatistics() { }
+    private LogThreadStatistics() {
+    }
 
-    public static LogThreadStatistics newInstance() { return new LogThreadStatistics(); }
+    public static LogThreadStatistics newInstance() {
+        return new LogThreadStatistics();
+    }
 
     @Override
     public void run(Program program) {
@@ -54,7 +56,7 @@ public class LogThreadStatistics implements ProgramProcessor {
             }
         }
 
-        int numNonInitThreads = (int)threads.stream().filter(t -> !(t.getEntry().getSuccessor() instanceof Init)).count();
+        int numNonInitThreads = (int) threads.stream().filter(t -> !(t.getEntry().getSuccessor() instanceof Init)).count();
         int staticAddressSpaceSize = program.getMemory().getObjects().stream()
                 .filter(m -> m.isStaticallyAllocated() && m.hasKnownSize()).mapToInt(MemoryObject::getKnownSize).sum();
         int dynamicAddressSpaceSize = program.getMemory().getObjects().stream()

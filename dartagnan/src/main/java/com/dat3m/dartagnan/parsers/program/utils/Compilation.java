@@ -1,11 +1,9 @@
 package com.dat3m.dartagnan.parsers.program.utils;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,8 +50,8 @@ public class Compilation {
         processBuilder.redirectOutput(log);
         Process proc = processBuilder.start();
         proc.waitFor();
-        if(proc.exitValue() != 0) {
-            String errorString =  Files.asCharSource(log, Charsets.UTF_8).read();
+        if (proc.exitValue() != 0) {
+            String errorString = Files.asCharSource(log, Charsets.UTF_8).read();
             throw new IOException("'" + String.join("' '", cmd) + "': " + errorString);
         }
     }

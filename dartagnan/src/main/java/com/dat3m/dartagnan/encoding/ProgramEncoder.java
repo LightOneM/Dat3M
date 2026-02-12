@@ -1,8 +1,5 @@
 package com.dat3m.dartagnan.encoding;
 
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.dat3m.dartagnan.configuration.ProgressModel;
 import com.dat3m.dartagnan.expression.Expression;
 import com.dat3m.dartagnan.expression.ExpressionFactory;
@@ -25,12 +22,13 @@ import com.dat3m.dartagnan.program.event.core.threading.ThreadStart;
 import com.dat3m.dartagnan.program.memory.Memory;
 import com.dat3m.dartagnan.program.memory.MemoryObject;
 import com.dat3m.dartagnan.program.misc.NonDetValue;
+
 import com.google.common.base.Preconditions;
 import com.google.common.base.Verify;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
 import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
@@ -200,7 +198,7 @@ public class ProgramEncoder implements Encoder {
         final BooleanFormulaManager bmgr = context.getBooleanFormulaManager();
         final ForwardProgressEncoder progressEncoder = new ForwardProgressEncoder();
         List<BooleanFormula> enc = new ArrayList<>();
-        for(Thread t : program.getThreads()){
+        for (Thread t : program.getThreads()) {
             enc.add(encodeConsistentThreadCF(t));
             if (IRHelper.isInitThread(t)) {
                 // Init threads are always progressing
@@ -229,7 +227,7 @@ public class ProgramEncoder implements Encoder {
         enc.add(bmgr.implication(threadHasStarted(thread), threadIsEnabled(thread)));
         enc.add(startEvent.encodeExec(context));
 
-        for(final Event cur : startEvent.getSuccessor().getSuccessors()) {
+        for (final Event cur : startEvent.getSuccessor().getSuccessors()) {
             final Event pred = cur.getPredecessor();
             // Immediate control flow
             BooleanFormula cfCond = context.controlFlow(pred);
@@ -467,11 +465,11 @@ public class ProgramEncoder implements Encoder {
                 enc.add(assign.apply(addrVar, alignment));
             } else {
                 final Expression nextAvailableAddr = exprs.makeAdd(
-                        exprs.makePtrToIntCast(context.address(prev),archType),
+                        exprs.makePtrToIntCast(context.address(prev), archType),
                         context.size(prev)
                 );
                 final Expression nextAlignedAddr = exprs.makeAdd(nextAvailableAddr,
-                        exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment,  true))
+                        exprs.makeSub(alignment, exprs.makeRem(nextAvailableAddr, alignment, true))
                 );
 
                 // ... other objects are placed at the next well-aligned address that is available.
@@ -485,8 +483,7 @@ public class ProgramEncoder implements Encoder {
     // ====================================== Data flow ======================================
 
     /**
-     * @return
-     * Describes that for each pair of events, if the reader uses the result of the writer,
+     * @return Describes that for each pair of events, if the reader uses the result of the writer,
      * then the value the reader gets from the register is exactly the value that the writer computed.
      * Also, the reader may only use the value of the latest writer that is executed.
      * Also, if no fitting writer is executed, the reader uses 0.
@@ -525,7 +522,7 @@ public class ProgramEncoder implements Encoder {
                     overwrite.add(context.execution(writer));
                 }
 
-                if(initializeRegisters && !reg.mustBeInitialized()) {
+                if (initializeRegisters && !reg.mustBeInitialized()) {
                     final Expression zero = exprs.makeGeneralZero(register.getType());
                     overwrite.add(bmgr.not(context.controlFlow(reader)));
                     overwrite.add(exprEncoder.assignEqualAt(register, reader, zero, reader));
@@ -659,7 +656,7 @@ public class ProgramEncoder implements Encoder {
                         group.getChildren().stream()
                                 .map(c -> bmgr.and(hasForwardProgress(c), isSchedulable(c)))
                                 .reduce(bmgr.makeFalse(), bmgr::or)
-                        ));
+                ));
             }
 
             // (2.3 Base cases for threads)
@@ -731,7 +728,7 @@ public class ProgramEncoder implements Encoder {
                     for (int i = 0; i < sortedChildren.size(); i++) {
                         final ThreadHierarchy child = sortedChildren.get(i);
                         final BooleanFormula sameOrHigherIDThreadWasScheduledOnce =
-                                sortedChildren.subList(i , sortedChildren.size()).stream()
+                                sortedChildren.subList(i, sortedChildren.size()).stream()
                                         .map(this::wasScheduledOnce)
                                         .reduce(bmgr.makeFalse(), bmgr::or);
 
