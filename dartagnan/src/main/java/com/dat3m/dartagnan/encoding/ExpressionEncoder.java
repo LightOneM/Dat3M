@@ -26,11 +26,11 @@ import com.dat3m.dartagnan.smt.TupleFormula;
 import com.dat3m.dartagnan.smt.TupleFormulaManager;
 import com.google.common.base.Preconditions;
 import org.sosy_lab.java_smt.api.*;
-import org.sosy_lab.java_smt.api.NumeralFormula.IntegerFormula;
-
-import java.math.BigInteger;
+import org.sosy_lab.java_smt.api.FloatingPointFormula;
+import org.sosy_lab.java_smt.api.FormulaType.FloatingPointType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Arrays.asList;
@@ -48,6 +48,7 @@ public class ExpressionEncoder {
     private final BooleanFormulaManager bfmgr;
     private final BitvectorFormulaManager bvmgr;
     private final TupleFormulaManager tfmgr;
+    private final Visitor visitor = new Visitor();
 
 
     ExpressionEncoder(EncodingContext context) {
@@ -438,7 +439,7 @@ public class ExpressionEncoder {
         public TypedFormula<FloatType, ?> visitIntToFloatCastExpression(IntToFloatCast expr) {
             final Formula operand = encodeIntegerExpr(expr.getOperand()).formula();
             final FloatType fType = expr.getTargetType();
-            final FloatingPointType targetType = getFloatFormulaType(fType);
+            final FormulaType.FloatingPointType targetType = getFloatFormulaType(fType);
             final Formula enc = floatingPointFormulaManager().castFrom(operand, true, targetType, context.roundingModeFloats);
             return new TypedFormula<>(fType, enc);
         }
@@ -448,7 +449,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<FloatType, ?> visitFloatLiteral(FloatLiteral floatLiteral) {
-            final FloatingPointType fFType = getFloatFormulaType(floatLiteral.getType());
+            final FormulaType.FloatingPointType fFType = getFloatFormulaType(floatLiteral.getType());
             final Formula result;
             if (floatLiteral.isNaN()) {
                 result = floatingPointFormulaManager().makeNaN(fFType);
@@ -546,9 +547,7 @@ public class ExpressionEncoder {
 
         @Override
         public TypedFormula<?, ?> visitFloatToIntCastExpression(FloatToIntCast expr) {
-            final FormulaType<?> targetFormulaType = context.useIntegers ?
-                FormulaType.IntegerType :
-                FormulaType.getBitvectorTypeWithSize(expr.getTargetType().getBitWidth());
+            final FormulaType<?> targetFormulaType = FormulaType.getBitvectorTypeWithSize(expr.getTargetType().getBitWidth());
             // Instructions fptoui and fptosi convert their floating-point operand into the nearest (rounding towards zero) integer value
             // https://llvm.org/docs/LangRef.html#fptoui-to-instruction
             // https://llvm.org/docs/LangRef.html#fptosi-to-instruction
@@ -575,9 +574,7 @@ public class ExpressionEncoder {
                         factory.makeLTE(baseAddress, address, false),
                         factory.makeLT(address, factory.makeAdd(baseAddress, size), false)
                 );
-                final Expression offsetToBase = factory.makeSub(address, baseAddress);
-
-                cases = factory.makeITE(isInside, factory.makePtrAdd(basePtr, offsetToBase), cases);
+                cases = factory.makeITE(isInside, factory.makePtrAdd(basePtr, address), cases);
             }
             return encodePointerExpr(cases);
         }
