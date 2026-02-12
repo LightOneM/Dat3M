@@ -91,8 +91,8 @@ public class ExpressionEncoder {
         }else if (type instanceof PointerType pointerType) {
             // variable = bvmgr.makeVariable(pointerType.getBitWidth(), name);
             BitvectorFormula base = bvmgr.makeVariable(pointerType.getBitWidth(), name + "_base");
-            BitvectorFormula offset = bvmgr.makeVariable(pointerType.getBitWidth(), name + "_offset");
-            variable = tfmgr.makeTuple(List.of(base, offset));
+            BitvectorFormula adr = bvmgr.makeVariable(pointerType.getBitWidth(), name + "_addr");
+            variable = tfmgr.makeTuple(List.of(base, adr));
         } else if (type instanceof MemoryType memoryType) {
             variable = bvmgr.makeVariable(memoryType.getBitWidth(), name);
         } else if (type instanceof AggregateType aggType) {
@@ -439,9 +439,9 @@ public class ExpressionEncoder {
         public TypedFormula<PointerType, TupleFormula> visitPtrAddExpression(PtrAddExpr expr) {
             final TypedFormula<PointerType, TupleFormula> ptr = encodePointerExpr(expr.getBase());
             final BitvectorFormula base = (BitvectorFormula) tfmgr.extract(ptr.formula(),0);
-            final BitvectorFormula offset = (BitvectorFormula) tfmgr.extract(ptr.formula(),1);
+            final BitvectorFormula adr = (BitvectorFormula) tfmgr.extract(ptr.formula(),1);
             final BitvectorFormula addedOffset = encodeIntegerExpr(expr.getOffset()).formula();
-            return new TypedFormula<>(expr.getType(), tfmgr.makeTuple(List.of(base,bvmgr.add(offset,addedOffset))));
+            return new TypedFormula<>(expr.getType(), tfmgr.makeTuple(List.of(base,bvmgr.add(adr,addedOffset))));
 
         }
 
@@ -551,10 +551,8 @@ public class ExpressionEncoder {
             final MemoryType targetType = types.getMemoryTypeFor(expr.getSourceType());
             checkMemoryCastSupport(expr.getSourceType());
             Formula enc = inner.formula();
-            if (enc instanceof TupleFormula tp) {
-                final BitvectorFormula base = (BitvectorFormula) tfmgr.extract(tp, 0);
-                final BitvectorFormula offset = (BitvectorFormula) tfmgr.extract(tp, 1);
-                enc = bvmgr.add(base, offset);
+            if ( expr.getSourceType() instanceof PointerType &&  enc instanceof TupleFormula tp) {
+                enc = tfmgr.extract(tp, 1);
             }
             final int innerSize = bvmgr.getLength((BitvectorFormula) enc);
             if (innerSize < targetType.getBitWidth()) {

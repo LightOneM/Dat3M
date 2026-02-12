@@ -523,9 +523,7 @@ public final class ExpressionFactory {
     public Expression makeMemoryExtend(Expression operand, MemoryType targetType) {
         return new MemoryExtend(targetType, operand);
     }
-    public Expression makeMemoryEqualExpr(Expression left, Expression right){
-        return new MemoryEqualExpr(booleanType,left,right);
-    }
+
 
 
     // -----------------------------------------------------------------------------------------------------------------
